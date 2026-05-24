@@ -1,0 +1,111 @@
+/**
+ * Canvas4me Design Tokens — 单一来源
+ *
+ * 项目代码: src/canvas/styles.css 顶部 @import 这份
+ * 标准文档: docs/ui-standards/shared.css 也 @import 这份
+ * 改一处,两边同步生效。
+ *
+ * 详见 docs/ui-standards/tokens.html (可视化) +
+ *      docs/superpowers/specs/2026-05-17-ui-standards-design.md §4
+ */
+
+:root {
+  /* ─── 品牌 ─── */
+  --ac-accent:           #6366F1;  /* Indigo-500 */
+  --ac-accent-hover:     #4F46E5;  /* Indigo-600 */
+
+  /* ─── 能力色 (同色温调和, Tailwind 500 系) ─── */
+  --ac-color-text:       #0EA5E9;  /* Sky-500 */
+  --ac-color-image:      #F97316;  /* Orange-500 */
+  --ac-color-audio:      #10B981;  /* Emerald-500 */
+  --ac-color-video:      #F43F5E;  /* Rose-500 */
+  --ac-color-file:       #94A3B8;  /* Slate-400 */
+  --ac-color-json:       #14B8A6;  /* Teal-500 */
+  --ac-color-llm-context: #6366F1; /* 同 accent, LLM 上下文边线 */
+
+  /* ─── 语义色 ─── */
+  --ac-success:          #10B981;
+  --ac-error:            #EF4444;
+  --ac-warning:          #F59E0B;
+  --ac-info:             #0EA5E9;
+
+  /* ─── 背景 ─── */
+  --ac-bg-card:          #FFFFFF;
+  --ac-bg-panel:         #F9FAFB;
+  --ac-bg-canvas:        #F3F4F6;
+
+  /* ─── 边框 ─── */
+  --ac-border-default:   #E5E7EB;
+  --ac-border-subtle:    #EFF1F4;
+
+  /* ─── 文本 ─── */
+  --ac-text-primary:     #0F172A;
+  --ac-text-secondary:   #475569;
+  --ac-text-muted:       #94A3B8;
+  --ac-text-on-accent:   #FFFFFF;
+
+  /* ─── 节点底色 (沿用现状, 不改) ─── */
+  --ac-node-content-border:    #D8D8E5;
+  --ac-node-capability-bg:     #EEF2FF;
+  --ac-node-capability-border: #C7D2FE;
+  --ac-node-group-bg:          #6366F112;
+  --ac-node-group-border:      #6366F133;
+
+  /* ─── 圆角 (5 阶 + 2 特殊) ─── */
+  --ac-radius-xs:        2px;
+  --ac-radius-sm:        4px;
+  --ac-radius-md:        6px;
+  --ac-radius-lg:        10px;
+  --ac-radius-xl:        14px;
+  --ac-radius-pill:      999px;
+  --ac-radius-circle:    50%;
+
+  /* ─── 阴影 (4 阶 + focus ring) ─── */
+  --ac-shadow-xs:        0 1px 2px rgba(0, 0, 0, 0.04);
+  --ac-shadow-sm:        0 2px 8px rgba(0, 0, 0, 0.08);
+  --ac-shadow-md:        0 4px 16px rgba(0, 0, 0, 0.10);
+  --ac-shadow-lg:        0 12px 32px rgba(0, 0, 0, 0.16);
+  --ac-shadow-focus:     0 0 0 2px rgba(99, 102, 241, 0.30);
+
+  /* ─── 字号 (7 阶 + 极小 9) ─── */
+  --ac-font-9:           9px;
+  --ac-font-xs:          10px;
+  --ac-font-sm:          11px;
+  --ac-font-md:          12px;
+  --ac-font-base:        13px;
+  --ac-font-lg:          14px;
+  --ac-font-xl:          16px;
+  --ac-font-2xl:         18px;
+
+  /* ─── 字重 ─── */
+  --ac-fw-regular:       400;
+  --ac-fw-medium:        500;
+  --ac-fw-semibold:      600;
+
+  /* ─── 行高 ─── */
+  --ac-lh-tight:         1.2;
+  --ac-lh-normal:        1.5;
+  --ac-lh-relaxed:       1.7;
+
+  /* ─── 间距 (8 阶, 8-grid + 细颗粒) ─── */
+  --ac-space-1:          2px;
+  --ac-space-2:          4px;
+  --ac-space-3:          6px;
+  --ac-space-4:          8px;
+  --ac-space-5:          12px;
+  --ac-space-6:          16px;
+  --ac-space-7:          24px;
+  --ac-space-8:          32px;
+
+  /* ─── 过渡 (3 时长) ─── */
+  --ac-trans-fast:       100ms ease;
+  --ac-trans-base:       150ms ease;
+  --ac-trans-slow:       250ms ease;
+
+  /* ─── z-index (语义化) ─── */
+  --ac-z-canvas:         0;
+  --ac-z-floating:       30;
+  --ac-z-popover:        100;
+  --ac-z-modal:          1000;
+  --ac-z-toast:          2000;
+}

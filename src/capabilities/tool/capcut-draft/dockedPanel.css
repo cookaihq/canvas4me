@@ -1,0 +1,63 @@
+/* src/capabilities/tool/capcut-draft/dockedPanel.css
+ * DockedPanel 的内容区样式 (顶栏走通用 .docked-topbar, 不在此).
+ * 包一层 .capcut-dp 命名空间避免与其他 capability 冲突.
+ */
+
+.capcut-dp .capcut-dp-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--ac-bg-canvas);
+  border: 1px solid var(--ac-border-subtle);
+  border-radius: 8px;
+}
+
+.capcut-dp-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.capcut-dp-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ac-text-secondary);
+}
+
+.capcut-dp-stat svg {
+  width: 14px;
+  height: 14px;
+  color: var(--ac-text-muted);
+}
+
+.capcut-dp-stat strong {
+  color: var(--ac-text-primary);
+  font-weight: 500;
+  font-family: ui-monospace, monospace;
+}
+
+.capcut-dp-stat-sep {
+  color: var(--ac-text-muted);
+  font-size: 12px;
+}
+
+.capcut-dp-empty {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ac-text-muted);
+  font-style: italic;
+}
+
+.capcut-dp-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}

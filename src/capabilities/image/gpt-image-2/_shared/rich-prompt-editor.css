@@ -1,0 +1,348 @@
+/* GPT Image 2 富文本提示词编辑器 */
+
+.gi2-prompt-section {
+  padding: 0;
+}
+
+.gi2-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 6px;
+}
+
+.gi2-prompt-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, rgba(0, 0, 0, 0.65));
+}
+
+.light-theme .gi2-prompt-title {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.gi2-prompt-clear {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.gi2-prompt-clear:hover {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.08);
+}
+
+.gi2-prompt-box {
+  position: relative;
+  min-height: 88px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.4);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.light-theme .gi2-prompt-box {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.gi2-prompt-box:focus-within {
+  border-color: rgba(114, 46, 209, 0.3);
+  box-shadow: 0 0 0 2px rgba(114, 46, 209, 0.08);
+}
+
+.gi2-prompt-box.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.gi2-prompt-editor {
+  min-height: 64px;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--text-primary, #333);
+}
+
+.light-theme .gi2-prompt-editor {
+  color: #333;
+}
+
+.gi2-prompt-placeholder {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 10px;
+  color: rgba(0, 0, 0, 0.3);
+  line-height: 1.7;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* @图像N chip token */
+.gi2-prompt-token {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e8f3ff;
+  border: 1px solid #91caff;
+  color: #0958d9;
+  font-weight: 600;
+  font-size: 13px;
+  user-select: all;
+  gap: 4px;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.gi2-prompt-token-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.gi2-prompt-token-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 77, 79, 0.12);
+  color: #ff4d4f;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 参考图 tile 左上角索引徽章（对齐原型 #1/#2/#3） */
+.nb-ref-tile-index {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+/* 能力节点 view 内用于提示 "精简版不支持..." 的灰色小卡片 */
+.gi2-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.light-theme .gi2-notice {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.gi2-notice-icon {
+  color: rgba(0, 0, 0, 0.35);
+  margin-top: 2px;
+}
+
+/* Resolution 行布局（预设 TagSelect + 自定义按钮） */
+.gi2-res-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gi2-res-row .nb-tag-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 参考图 tile 悬停操作浮层 */
+.gi2-tile-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.nb-ref-tile:hover .gi2-tile-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gi2-tile-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(0, 0, 0, 0.75);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.gi2-tile-btn:hover {
+  background: #fff;
+  transform: scale(1.08);
+}
+
+.gi2-tile-btn.danger:hover {
+  background: #ff4d4f;
+  color: #fff;
+}
+
+/* limit 模式专用：纯 textarea + 问号帮助 */
+.gi2-prompt-textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary, #333);
+}
+
+.light-theme .gi2-prompt-textarea {
+  color: #333;
+}
+
+.gi2-prompt-textarea::placeholder {
+  color: rgba(0, 0, 0, 0.3);
+}
+
+.gi2-prompt-textarea:disabled {
+  cursor: not-allowed;
+}
+
+.gi2-prompt-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.gi2-prompt-help-btn:hover {
+  color: #722ed1;
+  background: rgba(114, 46, 209, 0.08);
+}
+
+.gi2-prompt-help-popover .ant-popover-inner {
+  max-width: 360px;
+}
+
+.gi2-prompt-help-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.gi2-prompt-help-code {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.gi2-prompt-help-tip {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* 输出面板 gallery tile 悬停操作浮层（查看 / 插入画布） */
+.gi2-panel-tile-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.gi2-panel-tile:hover .gi2-panel-tile-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gi2-panel-tile-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(0, 0, 0, 0.72);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.gi2-panel-tile-btn:hover {
+  background: #fff;
+  transform: scale(1.08);
+}

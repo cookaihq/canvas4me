@@ -1,0 +1,14 @@
+# Docker build context 只需要 Dockerfile + nginx.conf,
+# 其他大文件不传进 daemon,加快 build。
+
+node_modules/
+dist/
+.git/
+.cache/
+.vscode/
+.idea/
+.DS_Store
+*.log
+npm-debug.log*
+.env
+.env.local

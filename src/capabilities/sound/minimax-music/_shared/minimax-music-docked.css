@@ -1,0 +1,24 @@
+/* MiniMax Music DockedPanel 私有样式 */
+.minimax-music-dp .mm-prompt-wrap { min-width: 0; }
+.minimax-music-dp .mm-prompt-wrap.modal { min-height: 150px; }
+
+.minimax-music-dp .mm-lyrics-wrap { display: flex; flex-direction: column; gap: var(--ac-space-2); min-width: 0; }
+
+/* 结构标签快捷插入 */
+.minimax-music-dp .mm-tag-row { display: flex; flex-wrap: wrap; gap: var(--ac-space-2); }
+.minimax-music-dp .mm-tag-chip {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 9px;
+  border: 1px solid rgba(16, 185, 129, 0.34); border-radius: var(--ac-radius-pill);
+  background: rgba(16, 185, 129, 0.08); color: #047857;
+  font: inherit; font-size: var(--ac-font-xs); font-weight: var(--ac-fw-medium);
+  white-space: nowrap; cursor: pointer;
+}
+.minimax-music-dp .mm-tag-chip:hover { background: rgba(16, 185, 129, 0.16); border-color: var(--ac-color-audio); }
+
+/* audio_setting 高级区 —— 底栏下方 */
+.minimax-music-dp .mm-advanced-region {
+  display: flex; flex-direction: column; gap: var(--ac-space-3);
+  padding: var(--ac-space-4) var(--ac-space-1) 0;
+  margin-top: var(--ac-space-2);
+  border-top: 1px solid var(--ac-border-subtle);
+}

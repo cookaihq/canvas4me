@@ -1,0 +1,57 @@
+/* Nano Banana DockedPanel 私有样式 (nb-dp-*) */
+/* dpr-* 参考图行样式来自 src/canvas/styles.css（全局共享），无需重复定义 */
+
+.nb-dp-divider {
+  height: 1px;
+  background: var(--ac-border-subtle, rgba(0,0,0,0.06));
+  margin: 4px 0;
+}
+
+.nb-dp-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ac-text-secondary);
+  text-transform: uppercase;
+}
+
+.nb-dp-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 默认 item：横向布局（label 左 120px + control 右） */
+.nb-dp-adv-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--ac-bg-panel, rgba(0,0,0,0.03));
+}
+
+.nb-dp-adv-label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ac-text-secondary);
+  text-transform: uppercase;
+}
+
+/* toggle 行（Switch）：label + Switch 对齐同一行 */
+.nb-dp-adv-toggle {
+  justify-content: space-between;
+}
+
+.nb-dp-prompt-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.nb-dp-prompt-wrap.modal .tp-editor-inline {
+  /* modal 形态下让提示词编辑器稍高 */
+  min-height: 120px;
+}

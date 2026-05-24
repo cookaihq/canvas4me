@@ -1,0 +1,212 @@
+/**
+ * Canvas4me 控件目录 — 单一物理文件。
+ * 代码: src/canvas/components/fields/ import 这份。
+ * 标准/原型: docs/ui-standards/shared.css @import 这份。
+ * 依赖 tokens.css 的 --ac-* 变量。
+ */
+
+/* ── 字段原子 ── */
+.ac-field { margin-bottom: var(--ac-space-5); }
+.ac-field:last-child { margin-bottom: 0; }
+.ac-field__label {
+  display: flex; align-items: center; gap: var(--ac-space-3);
+  font-size: var(--ac-font-base); font-weight: var(--ac-fw-semibold);
+  color: var(--ac-text-primary); margin-bottom: var(--ac-space-3);
+}
+.ac-field__required { color: var(--ac-color-video); }
+.ac-field__badge {
+  font-size: var(--ac-font-xs); font-weight: var(--ac-fw-semibold);
+  color: var(--ac-warning); background: #FFFBEB; border: 1px solid #FDE68A;
+  border-radius: var(--ac-radius-md); padding: 1px var(--ac-space-3);
+  display: inline-flex; align-items: center; gap: var(--ac-space-1);
+}
+.ac-field__help {
+  font-size: var(--ac-font-sm); color: var(--ac-text-muted);
+  margin-top: var(--ac-space-2); line-height: var(--ac-lh-normal);
+}
+.ac-field--inline .ac-field__label { margin-bottom: 0; flex: 0 0 auto; }
+.ac-field--inline .ac-field__row { display: flex; align-items: center; gap: var(--ac-space-5); }
+
+/* ── 字段网格 ── */
+.ac-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ac-space-5); }
+.ac-field-grid__full { grid-column: 1 / -1; }
+
+/* ── 媒体：宽卡 ── */
+.ac-media {
+  display: flex; align-items: center; gap: var(--ac-space-5);
+  height: 54px; box-sizing: border-box; padding: 0 var(--ac-space-5);
+  border: 1px solid var(--ac-border-default); border-radius: var(--ac-radius-lg);
+  background: var(--ac-bg-card);
+}
+.ac-media--audio { background: #ECFDF5; border-color: #A7F3D0; }
+.ac-media__thumb {
+  position: relative; width: 34px; height: 34px; flex: 0 0 auto; overflow: hidden;
+  border-radius: var(--ac-radius-md); background: var(--ac-bg-canvas); object-fit: cover;
+}
+.ac-media__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ac-media__thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ac-media__film {
+  position: absolute; left: 2px; bottom: 2px; z-index: 1; pointer-events: none;
+  color: #fff; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); display: inline-flex;
+}
+.ac-media__thumb--audio {
+  border-radius: var(--ac-radius-circle); background: var(--ac-color-audio);
+  display: flex; align-items: center; justify-content: center; color: var(--ac-text-on-accent);
+}
+/* 缩略图 hover「查看」浮层 */
+.ac-media__view {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  border: 0; padding: 0; cursor: pointer; color: #fff; background: rgba(0,0,0,.45);
+  font-size: var(--ac-font-sm); opacity: 0; transition: opacity var(--ac-trans-base);
+}
+.ac-media__thumb:hover .ac-media__view { opacity: 1; }
+.ac-media__name {
+  font-size: var(--ac-font-md); font-weight: var(--ac-fw-semibold);
+  color: var(--ac-text-primary); line-height: var(--ac-lh-tight);
+}
+.ac-media__meta { font-size: var(--ac-font-xs); color: var(--ac-text-muted); }
+.ac-media__remove {
+  margin-left: auto; color: var(--ac-text-muted); background: none; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center;
+}
+.ac-media__remove:hover { color: var(--ac-error); }
+
+/* ── 媒体：空态（紧凑卡高，无拖拽区） ── */
+.ac-media-empty {
+  height: 54px; width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; gap: var(--ac-space-4);
+  border: 1.5px dashed var(--ac-border-default); border-radius: var(--ac-radius-lg);
+  background: var(--ac-bg-panel); color: var(--ac-text-secondary);
+  font-size: var(--ac-font-md); font-weight: var(--ac-fw-semibold); cursor: pointer;
+}
+.ac-media-empty:hover { border-color: var(--ac-accent); color: var(--ac-accent); }
+
+/* ── 媒体：缩略图画廊 ── */
+.ac-thumbs { display: flex; align-items: center; gap: var(--ac-space-5); flex-wrap: wrap; }
+.ac-thumb {
+  position: relative; width: 52px; height: 52px; flex: 0 0 auto;
+  border-radius: var(--ac-radius-lg); overflow: hidden;
+  border: 1px solid var(--ac-border-default); background: var(--ac-bg-panel);
+}
+.ac-thumb img, .ac-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ac-thumb__remove {
+  position: absolute; top: var(--ac-space-2); right: var(--ac-space-2);
+  width: 16px; height: 16px; border-radius: var(--ac-radius-circle);
+  background: rgba(255,255,255,.92); color: var(--ac-text-secondary); border: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--ac-font-9); cursor: pointer; box-shadow: var(--ac-shadow-xs); z-index: 2;
+  transition: opacity var(--ac-trans-base);
+}
+.ac-thumb__overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  gap: var(--ac-space-3); background: rgba(0,0,0,.42);
+  opacity: 0; transition: opacity var(--ac-trans-base); pointer-events: none;
+}
+.ac-thumb:hover .ac-thumb__overlay { opacity: 1; pointer-events: auto; }
+.ac-thumb:hover .ac-thumb__remove { opacity: 0; pointer-events: none; }
+.ac-thumb__action {
+  width: 22px; height: 22px; border-radius: var(--ac-radius-circle); border: 0;
+  background: rgba(255,255,255,.94); color: var(--ac-text-primary); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--ac-font-sm); box-shadow: var(--ac-shadow-xs);
+}
+.ac-thumb__action--view { color: var(--ac-accent); }
+.ac-thumb--add {
+  display: flex; align-items: center; justify-content: center;
+  border: 1.3px dashed var(--ac-text-muted); background: var(--ac-bg-panel);
+  color: var(--ac-text-muted); cursor: pointer; font-size: var(--ac-font-xl);
+}
+.ac-thumb--add:hover { border-color: var(--ac-accent); color: var(--ac-accent); }
+
+/* ── 媒体：上传中（预览源来自上游，loading 与删除/hover 共存） ── */
+.ac-spinner {
+  width: 16px; height: 16px; box-sizing: border-box; flex: 0 0 auto; display: inline-block;
+  border-radius: var(--ac-radius-circle);
+  border: 2px solid var(--ac-border-default); border-top-color: var(--ac-accent);
+  animation: ac-spin .7s linear infinite;
+}
+.ac-spinner--sm { width: 12px; height: 12px; border-width: 1.5px; vertical-align: -2px; }
+@keyframes ac-spin { to { transform: rotate(360deg); } }
+
+/* 宽卡：缩略图保留上游预览，spinner 落在 meta 行，删除 ✕ 常驻 */
+.ac-media[data-loading] .ac-media__meta {
+  display: inline-flex; align-items: center; gap: var(--ac-space-2); color: var(--ac-accent);
+}
+
+/* 缩略图：spinner 居中叠加 + 浅遮罩；删除 ✕ 常驻（覆盖 hover 隐藏），hover 浮层仍可出 */
+.ac-thumb[data-loading]::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; background: rgba(255,255,255,.5);
+}
+/* margin:auto 居中(不占用 transform,避免被旋转动画清掉) */
+.ac-thumb__spinner { position: absolute; inset: 0; margin: auto; z-index: 2; }
+/* hover 回常规浮层:遮罩+spinner 隐去,露出 overlay 动作;右上 ✕ 由基础规则在 hover 自动隐藏 */
+.ac-thumb[data-loading]:hover::before,
+.ac-thumb[data-loading]:hover .ac-thumb__spinner { opacity: 0; }
+
+/* ── SegmentControl ── */
+.ac-segment { display: inline-flex; gap: var(--ac-space-3); flex-wrap: wrap; }
+.ac-segment--fill { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.ac-segment__option {
+  display: inline-flex; align-items: center; gap: var(--ac-space-3);
+  font-size: var(--ac-font-md); padding: var(--ac-space-3) var(--ac-space-5);
+  border-radius: var(--ac-radius-lg); border: 1px solid var(--ac-border-default);
+  background: var(--ac-bg-card); color: var(--ac-text-muted); cursor: pointer;
+}
+.ac-segment__option--on {
+  border-color: var(--ac-accent); background: var(--ac-node-capability-bg);
+  color: var(--ac-accent); font-weight: var(--ac-fw-semibold);
+}
+.ac-segment__option--disabled { opacity: 0.4; cursor: not-allowed; }
+.ac-segment__option--disabled:hover { background: var(--ac-bg-card); }
+.ac-segment__badge { font-size: var(--ac-font-xs); color: var(--ac-text-muted); font-weight: var(--ac-fw-regular); }
+.ac-ratio-icon {
+  display: inline-block; border: 1.6px solid currentColor;
+  border-radius: var(--ac-radius-xs); flex: 0 0 auto;
+}
+
+/* ── PromptTextarea ── */
+.ac-prompt {
+  position: relative; border: 1px solid var(--ac-border-default);
+  border-radius: var(--ac-radius-lg); background: var(--ac-bg-card);
+}
+.ac-prompt textarea {
+  width: 100%; box-sizing: border-box; border: 0; background: none; resize: vertical;
+  padding: var(--ac-space-5); min-height: 64px; font: inherit;
+  font-size: var(--ac-font-base); color: var(--ac-text-primary); line-height: var(--ac-lh-normal);
+}
+.ac-prompt textarea:focus { outline: none; }
+.ac-prompt:focus-within { border-color: var(--ac-accent); box-shadow: var(--ac-shadow-focus); }
+.ac-prompt__count {
+  position: absolute; right: var(--ac-space-5); bottom: var(--ac-space-3);
+  font-size: var(--ac-font-xs); color: var(--ac-text-muted); pointer-events: none;
+}
+
+/* ── Switch ── */
+.ac-switch {
+  width: 38px; height: 22px; padding: 0; border: 0; cursor: pointer; position: relative;
+  border-radius: var(--ac-radius-pill); background: var(--ac-border-default);
+  transition: background var(--ac-trans-base);
+}
+.ac-switch--on { background: var(--ac-accent); }
+.ac-switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  border-radius: var(--ac-radius-circle); background: var(--ac-text-on-accent);
+  box-shadow: var(--ac-shadow-xs); transition: left var(--ac-trans-base);
+}
+.ac-switch--on::after { left: 18px; }
+
+/* ── Stepper ── */
+.ac-stepper {
+  display: inline-flex; align-items: center; overflow: hidden;
+  border: 1px solid var(--ac-border-default); border-radius: var(--ac-radius-lg);
+}
+.ac-stepper__btn {
+  width: 30px; height: 30px; border: 0; cursor: pointer;
+  background: var(--ac-bg-card); color: var(--ac-text-muted); font-size: var(--ac-font-lg);
+}
+.ac-stepper__btn:hover { color: var(--ac-accent); }
+.ac-stepper__value {
+  width: 40px; text-align: center; line-height: 30px;
+  font-size: var(--ac-font-base); font-weight: var(--ac-fw-semibold); color: var(--ac-text-primary);
+  border-left: 1px solid var(--ac-border-default); border-right: 1px solid var(--ac-border-default);
+}

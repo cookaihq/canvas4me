@@ -1,0 +1,38 @@
+# ============================================================================
+# canvas4me - docker-compose
+# ----------------------------------------------------------------------------
+# 部署流程:
+#   1. cp .env.example .env       # 按需改端口
+#   2. npm install                # 安装前端依赖
+#   3. npm run build              # 生成 dist/
+#   4. docker compose up -d --build
+#
+# 容器内 nginx 配置(SPA fallback / gzip / 长缓存 / /healthz)
+# 已封装在镜像里,不需要在宿主机维护 nginx.conf。
+#
+# dist/ 通过 volume 挂载,只读模式:
+#   - 想更新站点 → 宿主机重跑 `npm run build` 即可,nginx 自动看到新文件
+#   - 不需要重 build 镜像、不需要 restart 容器
+#
+# 对外只暴露 ${CANVAS4ME_PORT:-3183} → 容器 80。
+# 域名 / HTTPS / 证书由宿主机外层 nginx(或 caddy / traefik)反代到这个端口。
+# ============================================================================
+
+services:
+  canvas4me:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: canvas4me:latest
+    container_name: canvas4me
+    restart: unless-stopped
+    ports:
+      - "${CANVAS4ME_PORT:-3183}:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

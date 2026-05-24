@@ -1,0 +1,183 @@
+/* src/capabilities/tool/capcut-draft/components/timelineModal.css */
+/* 时间线模态框样式。布局:顶部栏 + 左侧素材库 + 右侧轨道区。 */
+
+.capcut-modal .ant-modal-body { padding: 0; }
+.capcut-modal-frame {
+  display: flex; flex-direction: column;
+  height: 80vh; max-height: calc(100vh - 120px);
+}
+
+.capcut-settings-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-bottom: 1px solid #e5e7eb; background: #fafafa;
+  font-size: 13px;
+}
+.capcut-settings-bar input, .capcut-settings-bar .ant-select { background: #fff; }
+
+.capcut-main { display: flex; flex: 1; min-height: 0; }
+
+.capcut-library {
+  width: 260px; border-right: 1px solid #e5e7eb; padding: 10px;
+  background: #fcfcfd; overflow-y: auto;
+}
+.capcut-library-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; gap: 8px;
+}
+.capcut-library-title { font-size: 11px; color: #999; font-weight: 600; }
+.capcut-library-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.capcut-library-item { text-align: center; cursor: grab; user-select: none; }
+.capcut-library-item .cover {
+  aspect-ratio: 1; border-radius: 6px; position: relative;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: #f1f5f9; cursor: grab;
+}
+.capcut-library-item .cover video,
+.capcut-library-item .cover img {
+  width: 100%; height: 100%; object-fit: cover;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.capcut-library-item__play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 24px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+.capcut-library-item__preview-btn {
+  position: absolute; bottom: 4px; right: 4px;
+  width: 22px; height: 22px; padding: 0;
+  border: none; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3;
+  opacity: 0; transition: opacity 0.15s;
+}
+.capcut-library-item .cover:hover .capcut-library-item__preview-btn { opacity: 1; }
+.capcut-library-item__add-btn {
+  position: absolute; bottom: 4px; left: 4px;
+  width: 22px; height: 22px; padding: 0;
+  border: none; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3;
+  opacity: 0; transition: opacity 0.15s;
+}
+.capcut-library-item .cover:hover .capcut-library-item__add-btn { opacity: 1; }
+.capcut-library-item__add-btn:hover { background: rgba(37, 99, 235, 0.85); }
+.capcut-library-item__name {
+  margin-top: 4px;
+}
+.capcut-library-item__name .ant-input {
+  font-size: 11px; padding: 2px 6px; height: 22px;
+  text-align: center;
+}
+
+.capcut-tracks { flex: 1; padding: 10px; overflow: auto; }
+.capcut-ruler {
+  display: flex; padding-left: 42px; font-size: 10px; color: #bbb; margin-bottom: 4px;
+}
+.capcut-ruler span { flex-shrink: 0; }
+
+.capcut-track-row {
+  display: flex; align-items: center; gap: 4px; margin-bottom: 5px;
+}
+.capcut-track-label { width: 38px; font-size: 10px; color: #888; text-align: center; }
+.capcut-track-lane {
+  flex-shrink: 0; height: 34px; background: #f1f5f9; border-radius: 4px; position: relative;
+}
+.capcut-track-lane--video { height: 56px; }
+.capcut-track-lane--image { height: 56px; }
+
+.capcut-clip {
+  position: absolute; top: 3px; bottom: 3px;
+  border-radius: 4px; color: #fff; font-size: 10px;
+  overflow: hidden; cursor: grab; user-select: none;
+  display: flex; flex-direction: column;
+}
+.capcut-clip--video { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+.capcut-clip--audio { background: #22c55e; }
+.capcut-clip--text  { background: #a855f7; }
+.capcut-clip-resize {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+  background: rgba(255,255,255,.5); cursor: ew-resize;
+  z-index: 2;
+}
+.capcut-clip-name {
+  flex: 0 0 14px; height: 14px; line-height: 14px;
+  padding: 0 22px 0 6px;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 10px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  pointer-events: none; z-index: 1;
+}
+.capcut-clip-body {
+  position: relative;
+  flex: 1; min-height: 0;
+  overflow: hidden;
+}
+.capcut-clip-thumb {
+  position: absolute; inset: 0;
+}
+.capcut-clip-thumb video,
+.capcut-clip-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.capcut-clip-time {
+  position: absolute; right: 4px; bottom: 2px;
+  padding: 0 4px;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 9px; line-height: 14px; border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none; z-index: 2;
+}
+.capcut-clip-remove {
+  position: absolute; top: 1px; right: 8px;
+  width: 14px; height: 14px; padding: 0;
+  border: none; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65); color: #fff;
+  font-size: 12px; line-height: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3;
+  opacity: 0; transition: opacity 0.15s;
+}
+.capcut-clip:hover .capcut-clip-remove { opacity: 1; }
+
+.capcut-add-track-row {
+  display: flex; gap: 8px; font-size: 11px; color: #2563eb; padding-left: 42px;
+}
+.capcut-add-track-row button {
+  border: none; background: none; color: inherit; cursor: pointer; padding: 4px 8px;
+}
+
+/* 素材库卡片三态(pending/failed) */
+.capcut-library-item--pending,
+.capcut-library-item--failed {
+  cursor: not-allowed;
+}
+.capcut-library-item--pending .cover {
+  opacity: 0.6;
+}
+.capcut-library-item--failed {
+  outline: 1.5px solid #ff4d4f;
+  outline-offset: -1.5px;
+  border-radius: 4px;
+}
+.capcut-library-item__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: inherit;
+}
+.capcut-library-item--failed .capcut-library-item__overlay {
+  background: rgba(255, 77, 79, 0.15);
+}

@@ -1,0 +1,70 @@
+/* src/capabilities/tool/capcut-draft/components/HelperStatusBadge.css
+ * 设计依据：docs/superpowers/specs/2026-05-17-capcut-helper-status-badge-redesign-design.md §4.2
+ * Pill-Fade 形态：胶囊外壳 + 淡色背景 + dot + 文字。4 种颜色变体复用项目 token。
+ */
+
+.helper-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  transition: filter 120ms;
+  user-select: none;
+}
+
+.helper-badge--clickable {
+  cursor: pointer;
+}
+.helper-badge--clickable:hover {
+  filter: brightness(0.96);
+}
+
+.helper-badge__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.helper-badge__red-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ac-error);
+  border: 1.5px solid var(--ac-bg-card);
+}
+
+/* 4 色变体：背景用 color-mix 派生淡色填充，文字用 token 加深 */
+.helper-badge--indigo {
+  background: color-mix(in srgb, var(--ac-accent) 12%, transparent);
+  color: color-mix(in srgb, var(--ac-accent) 70%, #000 30%);
+}
+.helper-badge--indigo .helper-badge__dot { background: var(--ac-accent); }
+
+.helper-badge--emerald {
+  background: color-mix(in srgb, var(--ac-success) 12%, transparent);
+  color: color-mix(in srgb, var(--ac-success) 70%, #000 30%);
+}
+.helper-badge--emerald .helper-badge__dot { background: var(--ac-success); }
+
+.helper-badge--amber {
+  background: color-mix(in srgb, var(--ac-warning) 12%, transparent);
+  color: color-mix(in srgb, var(--ac-warning) 70%, #000 30%);
+}
+.helper-badge--amber .helper-badge__dot { background: var(--ac-warning); }
+
+.helper-badge--red {
+  background: color-mix(in srgb, var(--ac-error) 12%, transparent);
+  color: color-mix(in srgb, var(--ac-error) 70%, #000 30%);
+}
+.helper-badge--red .helper-badge__dot { background: var(--ac-error); }

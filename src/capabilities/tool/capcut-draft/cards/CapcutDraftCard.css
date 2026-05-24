@@ -1,0 +1,208 @@
+/* src/capabilities/tool/capcut-draft/cards/CapcutDraftCard.css
+ * 折叠态节点本体: 节点头 + 缩略图网格 + footer.
+ * 视觉对齐 docs/superpowers/specs/2026-05-19-capcut-draft-dockedpanel-mockup.html §5.
+ *
+ * 节点壳由 CapabilityNode 提供 (.capability-node 控制背景 #EEF2FF / 边框 #B8C8F0 / 圆角 / 状态色);
+ * 这里只管内部布局 padding / gap 与各分区视觉.
+ */
+
+.capcut-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ac-space-3);
+  padding: var(--ac-space-4);
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+}
+
+/* Done / Running 不在 Card 内画状态边框 — 状态信息由 FoldedNodeMeta (节点上方 meta 行)
+ * 和 footer 文字 (.capcut-card-footer.is-*) 表达, 避免与 .capability-node 默认描边形成双环.
+ * Failed 仍由项目级 .capability-node.is-failed 提供红色外框, 不需要在 Card 内重复. */
+
+/* ─── 节点头 ─── */
+.capcut-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ac-space-3);
+}
+.capcut-card-head-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ac-radius-sm);
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--ac-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.capcut-card-head-text {
+  min-width: 0;
+}
+.capcut-card-head-title {
+  font-size: var(--ac-font-base);
+  font-weight: var(--ac-fw-semibold);
+  color: var(--ac-text-primary);
+  line-height: 1.2;
+}
+.capcut-card-head-sub {
+  font-size: var(--ac-font-xs);
+  color: var(--ac-text-secondary);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* ─── 缩略图网格 ─── */
+.capcut-card-thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.capcut-card-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  background: #fff;
+  border: 1px solid var(--ac-border-subtle);
+  border-radius: var(--ac-radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.capcut-card-thumb svg {
+  width: 24px;
+  height: 24px;
+  color: var(--ac-text-muted);
+}
+
+.capcut-card-thumb-real { padding: 0; background: #f1f5f9; }
+/* object-fit: contain 让长边填满方格, 短边留浅灰底 (#f1f5f9) — 保留素材完整形状,
+ * 不裁剪掉人像 / 风景的边缘信息. 同方格右下角的时长 tag 落在浅灰底上仍可读. */
+.capcut-card-thumb-real img,
+.capcut-card-thumb-real video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+/* 视频只取首帧, 不响应指针 — 避免拖动节点 / 选中节点时被 <video> 拦截事件. */
+.capcut-card-thumb-real video {
+  pointer-events: none;
+}
+
+/* 视频中心 ▶ 浮层 */
+.capcut-card-thumb-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.capcut-card-thumb-play svg { color: #fff; width: 11px; height: 11px; }
+
+/* 右下角 tag (时长 / 字数) */
+.capcut-card-thumb-tag {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: ui-monospace, monospace;
+}
+
+.capcut-card-thumb-audio { background: #F0FDF4; border-color: #86EFAC; }
+.capcut-card-thumb-audio svg { color: #16A34A; }
+
+.capcut-card-thumb-text { background: #FEF3C7; border-color: #FCD34D; }
+.capcut-card-thumb-text svg { color: #B45309; }
+
+.capcut-card-thumb-unknown { background: var(--ac-bg-canvas); }
+
+/* +N 折叠格 */
+.capcut-card-thumb-more {
+  background: var(--ac-bg-panel);
+  border: 1px dashed var(--ac-border-default);
+  color: var(--ac-text-muted);
+  font-size: var(--ac-font-sm);
+  font-weight: var(--ac-fw-medium);
+}
+
+/* 空态: 占满整行 (grid-column 1 / -1) — 留在 grid 容器内, 不破布局 */
+.capcut-card-thumb-empty {
+  grid-column: 1 / -1;
+  padding: var(--ac-space-5) var(--ac-space-4);
+  text-align: center;
+  color: var(--ac-text-muted);
+  font-size: var(--ac-font-xs);
+  background: var(--ac-bg-canvas);
+  border: 1px dashed var(--ac-border-subtle);
+  border-radius: var(--ac-radius-sm);
+  font-style: italic;
+}
+
+/* ─── footer ─── */
+/* margin-top:auto 把 footer 推到节点底部 — 节点高度由 NodeResizer 决定可大于内容,
+ * 缩略图 + header 自然撑到顶, 中间空间留给将来更多素材, footer 始终贴底. */
+.capcut-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--ac-font-xs);
+  color: var(--ac-text-secondary);
+  padding-top: var(--ac-space-2);
+  border-top: 1px dashed var(--ac-border-subtle);
+  min-width: 0;
+  margin-top: auto;
+}
+
+/* 状态色只作用在左侧 status 文字 — 右侧 hint (e.g. "N 个素材") 保持 secondary,
+ * 跟原型一致 (footer 不让颜色铺满整行, 计数字段不被状态色淹没). */
+.capcut-card-footer.is-running .capcut-card-footer-status { color: #3B82F6; }
+.capcut-card-footer.is-done    .capcut-card-footer-status { color: var(--ac-success); }
+.capcut-card-footer.is-failed  .capcut-card-footer-status { color: var(--ac-error); }
+
+.capcut-card-footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capcut-card-footer-count {
+  font-family: ui-monospace, monospace;
+  color: var(--ac-text-primary);
+  font-weight: var(--ac-fw-medium);
+}
+
+.capcut-card-footer-hint {
+  color: var(--ac-text-secondary);
+  flex-shrink: 0;
+}
+
+.capcut-card-spin {
+  animation: capcut-card-spin 1s linear infinite;
+}
+@keyframes capcut-card-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+

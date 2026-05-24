@@ -1,0 +1,307 @@
+/* Seedance R2V chip prompt 编辑器 + I2V/FLF 单图上传组件样式
+   见 docs/capabilities/video/seedance-2.md §2.5–2.7 */
+
+/* ── chip 编辑器主体 ── */
+.sd2-chip-editor {
+  position: relative;
+  min-height: 88px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.4);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.light-theme .sd2-chip-editor {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.sd2-chip-editor:focus-within {
+  border-color: rgba(114, 46, 209, 0.3);
+  box-shadow: 0 0 0 2px rgba(114, 46, 209, 0.08);
+}
+
+.sd2-chip-editor.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.sd2-chip-editor-area {
+  min-height: 64px;
+  /* 过长时限高 + 框内滚动 (不再把整个面板撑高) */
+  max-height: 30vh;
+  overflow-y: auto;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--text-primary, #333);
+}
+
+.light-theme .sd2-chip-editor-area {
+  color: #333;
+}
+
+.sd2-chip-editor-placeholder {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 10px;
+  color: rgba(0, 0, 0, 0.3);
+  line-height: 1.7;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* ── chip token ── */
+.sd2-chip {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e8f3ff;
+  border: 1px solid #91caff;
+  color: #0958d9;
+  font-weight: 600;
+  font-size: 13px;
+  user-select: all;
+  gap: 4px;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.sd2-chip-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.sd2-chip-text {
+  pointer-events: none;
+}
+
+/* 悬空 chip — 引用了但素材已删除, 红色警示 */
+.sd2-chip-orphan {
+  background: rgba(255, 77, 79, 0.1);
+  border-color: rgba(255, 77, 79, 0.4);
+  color: #ff4d4f;
+}
+
+/* ── 单图上传组件 (I2V / FLF) ── */
+
+/* 空态 dropzone */
+.sd2-single-img-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.02);
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.sd2-single-img-empty:hover {
+  border-color: rgba(114, 46, 209, 0.4);
+  color: rgba(114, 46, 209, 0.9);
+  background: rgba(114, 46, 209, 0.04);
+}
+
+.sd2-single-img-empty.drag-over {
+  border-color: #722ed1;
+  background: rgba(114, 46, 209, 0.08);
+  color: #722ed1;
+}
+
+.sd2-single-img-empty.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sd2-single-img-empty-text {
+  flex: 1 1 auto;
+}
+
+/* 已上传 / 端口连接形态共用容器 */
+.sd2-single-img-filled,
+.sd2-single-img-port {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sd2-single-img-port {
+  background: rgba(114, 46, 209, 0.04);
+  border-color: rgba(114, 46, 209, 0.2);
+}
+
+.sd2-single-img-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.sd2-single-img-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sd2-single-img-thumb-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.sd2-single-img-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sd2-single-img-thumb:hover .sd2-single-img-thumb-overlay {
+  opacity: 1;
+}
+
+.sd2-single-img-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sd2-single-img-name {
+  font-size: 13px;
+  color: var(--text-primary, rgba(0, 0, 0, 0.85));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sd2-single-img-hint {
+  font-size: 11px;
+  color: rgba(114, 46, 209, 0.7);
+}
+
+.sd2-single-img-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sd2-single-img-replace {
+  border: none;
+  background: transparent;
+  color: #1677ff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.sd2-single-img-replace:hover {
+  background: rgba(22, 119, 255, 0.08);
+}
+
+.sd2-single-img-replace:disabled {
+  color: rgba(0, 0, 0, 0.3);
+  cursor: not-allowed;
+}
+
+.sd2-single-img-x {
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sd2-single-img-x:hover {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.08);
+}
+
+/* ── R2V DockedPanel 主区布局 ── */
+
+.sd2-dp-r2v-section {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sd2-dp-r2v-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 参考视频 / 参考音频 并排两栏 (各占一半) */
+.sd2-dp-r2v-row-2col {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sd2-dp-r2v-row-2col > .sd2-dp-r2v-group {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 两栏中间淡淡的竖线分隔 */
+.sd2-dp-r2v-row-2col > .sd2-dp-r2v-group + .sd2-dp-r2v-group {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  padding-left: 16px;
+}
+
+.sd2-dp-r2v-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.sd2-dp-r2v-group-counter {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.sd2-dp-r2v-group-counter.over-limit {
+  color: #ff4d4f;
+  font-weight: 600;
+}
