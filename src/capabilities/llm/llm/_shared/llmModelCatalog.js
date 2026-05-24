@@ -4,8 +4,6 @@
  *
  * 数据源（taskClient.listLlmModels）是扁平表：[{ id, capabilities: ['text'|'vision'|'video'|'audio'|'file'] }]
  *   - filterModelsByMode: 按 mode 需要的 capability 过滤
- *   - mergeModelLabels:   叠加可选展示元数据（label/badge/description），缺省兜底 id
- *   - parseModelLabelsEnv: 安全解析 VITE_LLM_MODEL_LABELS（非法/空 → {}）
  */
 
 // mode → 该 mode 需要模型具备的上游 capability（与后端 README capability 映射一致）
@@ -22,32 +20,6 @@ export function filterModelsByMode(list, mode) {
   const need = MODE_CAPABILITY[mode]
   if (!need) return list
   return list.filter(m => Array.isArray(m?.capabilities) && m.capabilities.includes(need))
-}
-
-export function mergeModelLabels(list, overlay) {
-  if (!Array.isArray(list)) return []
-  const map = overlay && typeof overlay === 'object' ? overlay : {}
-  return list.map(m => {
-    const id = m?.id
-    const o = map[id] || {}
-    return {
-      name: id,
-      label: o.label || id,
-      badge: o.badge || '',
-      description: o.description || '',
-      capabilities: Array.isArray(m?.capabilities) ? m.capabilities : [],
-    }
-  })
-}
-
-export function parseModelLabelsEnv(raw) {
-  if (typeof raw !== 'string' || !raw.trim()) return {}
-  try {
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
-  } catch {
-    return {}
-  }
 }
 
 // 混合模式专用：连入素材的端口类型 → 模型需要具备的能力

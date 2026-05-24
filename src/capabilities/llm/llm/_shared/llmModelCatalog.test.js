@@ -4,8 +4,6 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   filterModelsByMode,
-  mergeModelLabels,
-  parseModelLabelsEnv,
   getRequiredCapabilities,
   getModelMissingCapabilities,
 } from './llmModelCatalog.js'
@@ -42,33 +40,6 @@ test('filterModelsByMode: 未知 mode 返回全部', () => {
 
 test('filterModelsByMode: 非数组输入返回空数组', () => {
   assert.deepEqual(filterModelsByMode(null, 'llm-text'), [])
-})
-
-test('mergeModelLabels: 有覆盖用覆盖，无覆盖兜底 id', () => {
-  const overlay = { 'gpt-5.5': { label: 'GPT 5.5', badge: 'thinking', description: '通用' } }
-  const r = mergeModelLabels(FLAT, overlay)
-  assert.deepEqual(r[2], {
-    name: 'gpt-5.5', label: 'GPT 5.5', badge: 'thinking', description: '通用',
-    capabilities: ['text', 'vision'],
-  })
-  assert.deepEqual(r[0], {
-    name: 'claude-opus-4-7', label: 'claude-opus-4-7', badge: '', description: '',
-    capabilities: ['text', 'vision', 'file'],
-  })
-})
-
-test('mergeModelLabels: 非数组输入返回空数组', () => {
-  assert.deepEqual(mergeModelLabels(undefined, {}), [])
-})
-
-test('parseModelLabelsEnv: 合法 JSON', () => {
-  assert.deepEqual(parseModelLabelsEnv('{"a":{"label":"A"}}'), { a: { label: 'A' } })
-})
-
-test('parseModelLabelsEnv: 非法/空 → 空对象', () => {
-  assert.deepEqual(parseModelLabelsEnv('not json'), {})
-  assert.deepEqual(parseModelLabelsEnv(''), {})
-  assert.deepEqual(parseModelLabelsEnv(undefined), {})
 })
 
 test('getRequiredCapabilities: 文件连入 → file', () => {

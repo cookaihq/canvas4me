@@ -52,12 +52,19 @@ function ext(name) {
   return dot >= 0 ? name.slice(dot + 1).toUpperCase().slice(0, 4) : ''
 }
 
+const REASON_TEXT = {
+  count_exceeded: '超出该模型数量上限',
+  size_exceeded: '超出该模型大小上限',
+  mime_unsupported: '该格式不被当前模型支持',
+}
+
 export default function MixedAttachmentRow({
   groups,
   disabled = false,
   onPickFiles,
   onPasteLink,
   onDelete,
+  getInvalidReason,
 }) {
   const [addOpen, setAddOpen] = useState(false)
   const [preview, setPreview] = useState(null)  // { url, kind } | null
@@ -101,8 +108,10 @@ export default function MixedAttachmentRow({
       <div className="llm-mix-strip">
         {TYPE_ORDER.flatMap(kind => (groups?.[kind] || []).map((item, i) => {
           const showActions = !disabled && !item.uploading && !!item.url
+          const reason = typeof getInvalidReason === 'function' ? getInvalidReason(kind, item) : null
           return (
-            <div key={`${kind}-${item.edgeId || item.sourceNodeId || i}`} className={`llm-mix-thumb${item.uploading ? ' uploading' : ''}`} data-kind={kind}>
+            <div key={`${kind}-${item.edgeId || item.sourceNodeId || i}`} className={`llm-mix-thumb${item.uploading ? ' uploading' : ''}${reason ? ' invalid' : ''}`} data-kind={kind}>
+              {reason && <span className="llm-mix-invalid-badge" title={REASON_TEXT[reason] || ''}>!</span>}
               {item.uploading ? (
                 <div className="llm-mix-thumb-inner"><Loader2 size={14} className="icon-spin" /></div>
               ) : kind === 'image' && item.url ? <ImageThumb item={item} />

@@ -6,4 +6,4 @@
  *
  * ⚠️ 规则:每次任务完成必须把这个数字 +1。详见 CLAUDE.md §版本号。
  */
-export const CANVAS_VERSION = 567
+export const CANVAS_VERSION = 569

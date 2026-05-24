@@ -27,6 +27,7 @@ export default function useEdgeAttachments({
   portId,
   inputSubType,  // 'image' | 'video' | 'audio'
   max,
+  validateFile,
 }) {
   const facade = useCanvasFacade()
   const uploader = useUploader()
@@ -49,6 +50,20 @@ export default function useEdgeAttachments({
       return
     }
     const accepted = Array.from(files).slice(0, remain)
+
+    if (typeof validateFile === 'function') {
+      const passed = []
+      const rejected = []
+      for (const f of accepted) {
+        const r = validateFile(f)
+        if (r && r.ok === false) rejected.push(`${f.name}(${r.reason})`)
+        else passed.push(f)
+      }
+      if (rejected.length) message.warning(`${rejected.length} 个文件被拒绝：${rejected.join('、')}`)
+      if (passed.length === 0) return
+      accepted.length = 0
+      accepted.push(...passed)
+    }
 
     const capX = capabilityNode.position?.x ?? 0
     const capY = capabilityNode.position?.y ?? 0
@@ -84,7 +99,7 @@ export default function useEdgeAttachments({
 
       uploader.uploadFile(file)
         .then(result => {
-          facade.updateNodeData(newNode.id, { content: { url: result.url, fileName: file.name } })
+          facade.updateNodeData(newNode.id, { content: { url: result.url, fileName: file.name, fileSize: file.size, mimeType: file.type } })
         })
         .catch(err => {
           message.error(`${file.name} 上传失败: ${err?.message || '未知错误'}`)
@@ -97,7 +112,7 @@ export default function useEdgeAttachments({
           facade.batchUpdateEdges(eds => eds.filter(e => e.id !== newEdgeId))
         })
     })
-  }, [capabilityNode, items.length, inputSubType, portId, max, facade, uploader])
+  }, [capabilityNode, items.length, inputSubType, portId, max, validateFile, facade, uploader])
 
   const handleDelete = useCallback((item) => {
     if (item.source !== 'edge' || !item.edgeId) return

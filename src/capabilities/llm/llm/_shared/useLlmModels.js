@@ -2,12 +2,13 @@
  * useLlmModels —— LLM 子能力 model 清单加载 hook
  *
  * 数据来源:`taskClient.listLlmModels()`(由 platform 注入,各底座实现自带)。
- * 返回扁平表 [{ name, label, badge, description, capabilities }],经 mergeModelLabels 叠加展示元数据。
+ * 返回扁平表 [{ name, label, badge, description, capabilities }],由 resolveModelDisplay 填充展示元数据。
  * 缓存:模块级变量(进程内)+ sessionStorage(15 分钟 TTL),避免重复调用。
  */
 import { useEffect, useState } from 'react'
 import { useTaskClient } from '@/platform/provider.jsx'
-import { filterModelsByMode, mergeModelLabels, parseModelLabelsEnv } from './llmModelCatalog'
+import { filterModelsByMode } from './llmModelCatalog'
+import { resolveModelDisplay } from './modelDisplay'
 
 const CACHE_KEY = 'aiCanvas:llmModels'
 const CACHE_TTL_MS = 15 * 60 * 1000  // 15 分钟
@@ -48,8 +49,11 @@ async function loadOnce(taskClient) {
   inflight = (async () => {
     try {
       const flat = await taskClient.listLlmModels()        // [{ id, capabilities }]
-      const overlay = parseModelLabelsEnv(import.meta.env.VITE_LLM_MODEL_LABELS)
-      cached = mergeModelLabels(flat, overlay)             // [{ name, label, badge, description, capabilities }]
+      cached = (Array.isArray(flat) ? flat : []).map(m => ({
+        name: m.id,
+        ...resolveModelDisplay(m.id),
+        capabilities: Array.isArray(m.capabilities) ? m.capabilities : [],
+      }))
       writeSessionCache(cached)
       return cached
     } finally {

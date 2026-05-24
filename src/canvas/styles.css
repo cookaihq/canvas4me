@@ -8713,6 +8713,14 @@
   padding: 0;
 }
 
+.llm-mix-thumb.invalid { border-color: #ef4444; box-shadow: 0 0 0 1px #ef4444; }
+.llm-mix-invalid-badge {
+  position: absolute; left: 3px; bottom: 3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #ef4444; color: #fff;
+  font-size: 10px; line-height: 14px; text-align: center; font-weight: 700;
+}
+
 .llm-mix-action:hover {
   background: rgba(15, 23, 42, 0.9);
 }

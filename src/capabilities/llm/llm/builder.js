@@ -14,6 +14,7 @@
  */
 import { expandPromptPlaceholders } from '@/canvas/runtime/builders/expandPromptPlaceholders'
 import { assembleMessages } from './_shared/buildCustomMessages'
+import { resolveModelConstraints } from './_shared/modelConstraints'
 
 export const MAX_IMAGES = 10
 export const MAX_VIDEOS = 10
@@ -73,14 +74,16 @@ export function buildLlmRequestBody({ mode, modeParams, collectedInputs, canvasI
     body.video_urls = [...uploadedUrls, ...youtubeLinks].slice(0, MAX_VIDEOS)
   } else if (mode === 'llm-custom') {
     // 混合模式：messages 形态（不发 llm-* 旧顶层字段）。先收集各类附件 URL。
-    const imageUrls = collectAttachmentUrls(collectedInputs, params, 'image', 'images').slice(0, MAX_IMAGES)
+    const cons = resolveModelConstraints(params.model || '')
+    const capOf = (kind, fb) => cons[kind]?.maxCount ?? fb
+    const imageUrls = collectAttachmentUrls(collectedInputs, params, 'image', 'images').slice(0, capOf('image', MAX_IMAGES))
     const videoUploaded = collectAttachmentUrls(collectedInputs, params, 'video', 'videos')
     const youtubeLinks = Array.isArray(params.videoLinks)
       ? params.videoLinks.filter(u => typeof u === 'string' && u)
       : []
-    const videoUrls = [...videoUploaded, ...youtubeLinks].slice(0, MAX_VIDEOS)
-    const audioUrls = collectAttachmentUrls(collectedInputs, params, 'audio', 'audios').slice(0, MAX_AUDIOS)
-    const fileUrls = collectAttachmentUrls(collectedInputs, params, 'file', 'files').slice(0, MAX_FILES)
+    const videoUrls = [...videoUploaded, ...youtubeLinks].slice(0, capOf('video', MAX_VIDEOS))
+    const audioUrls = collectAttachmentUrls(collectedInputs, params, 'audio', 'audios').slice(0, capOf('audio', MAX_AUDIOS))
+    const fileUrls = collectAttachmentUrls(collectedInputs, params, 'file', 'files').slice(0, capOf('file', MAX_FILES))
 
     const messages = assembleMessages({
       systemPrompt, promptText, images: imageUrls, videos: videoUrls, audios: audioUrls, files: fileUrls,

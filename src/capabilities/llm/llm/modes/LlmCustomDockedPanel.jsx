@@ -11,6 +11,8 @@ import LlmPromptInput from '../_shared/LlmPromptInput'
 import LlmAdvancedSection from '../_shared/LlmAdvancedSection'
 import MixedAttachmentRow from '../_shared/MixedAttachmentRow'
 import useEdgeAttachments from '../_shared/useEdgeAttachments'
+import { resolveModelConstraints } from '../_shared/modelConstraints'
+import { validateAttachments } from '../_shared/validateAttachments'
 import { useLlmModels, getModelsForCapability } from '../_shared/useLlmModels'
 import { getRequiredCapabilities, getModelMissingCapabilities } from '../_shared/llmModelCatalog'
 import useModelForMode from '../_shared/useModelForMode'
@@ -24,14 +26,39 @@ export default function LlmCustomDockedPanel({
   paramsUnchanged = false, variant = 'default',
   onCapabilityChange, onModeChange, onParamsChange, onRun, onRequestVariant,
 }) {
-  const image = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'image', inputSubType: 'image', max: MAX_IMAGES })
-  const video = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'video', inputSubType: 'video', max: MAX_VIDEOS })
-  const audio = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'audio', inputSubType: 'audio', max: MAX_AUDIOS })
-  const file  = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'file',  inputSubType: 'file',  max: MAX_FILES })
+  const constraints = useMemo(() => resolveModelConstraints(params.model || ''), [params.model])
+  const maxOf = (kind, fb) => constraints[kind]?.maxCount ?? fb
+  const makeValidateFile = useCallback((kind) => (f) => {
+    const c = constraints[kind]
+    if (!c) return { ok: true }
+    if (c.maxSizeMB != null && f.size > c.maxSizeMB * 1024 * 1024) return { ok: false, reason: `超出 ${c.maxSizeMB}MB 上限` }
+    if (Array.isArray(c.mime) && c.mime.length && f.type && !c.mime.includes(f.type)) return { ok: false, reason: '格式不支持' }
+    return { ok: true }
+  }, [constraints])
+
+  const image = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'image', inputSubType: 'image', max: maxOf('image', MAX_IMAGES), validateFile: makeValidateFile('image') })
+  const video = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'video', inputSubType: 'video', max: maxOf('video', MAX_VIDEOS), validateFile: makeValidateFile('video') })
+  const audio = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'audio', inputSubType: 'audio', max: maxOf('audio', MAX_AUDIOS), validateFile: makeValidateFile('audio') })
+  const file  = useEdgeAttachments({ nodeId: node.id, capabilityNode: node, edges, nodes, portId: 'file',  inputSubType: 'file',  max: maxOf('file', MAX_FILES),  validateFile: makeValidateFile('file') })
 
   const groups = useMemo(() => ({
     image: image.items, video: video.items, audio: audio.items, file: file.items,
   }), [image.items, video.items, audio.items, file.items])
+
+  const validationGroups = useMemo(() => {
+    const yt = Array.isArray(params.videoLinks) ? params.videoLinks : []
+    return {
+      image: image.items,
+      video: [...video.items, ...yt.map(url => ({ url, isExternal: true }))],
+      audio: audio.items,
+      file: file.items,
+    }
+  }, [image.items, video.items, audio.items, file.items, params.videoLinks])
+  const validation = useMemo(() => validateAttachments({ constraints, groups: validationGroups }), [constraints, validationGroups])
+  const getInvalidReason = useCallback((kind, item) => {
+    const hit = validation.invalid.find(v => v.kind === kind && v.item === item)
+    return hit ? hit.reason : null
+  }, [validation])
 
   const { loading: modelsLoading, models: modelCatalog } = useLlmModels()
   const modeModels = useMemo(() => getModelsForCapability(modelCatalog, mode), [modelCatalog, mode])
@@ -70,7 +97,7 @@ export default function LlmCustomDockedPanel({
     () => !!params?.model && modelOptions.some(o => o.value === params.model && o.disabled),
     [params?.model, modelOptions],
   )
-  const canRun = !!params?.model && (!!promptText.trim() || anyAttachment) && !claudeNeedsTokens && !currentModelGated
+  const canRun = !!params?.model && (!!promptText.trim() || anyAttachment) && !claudeNeedsTokens && !currentModelGated && validation.ok
 
   const handlePickFiles = useCallback((kind, files) => {
     const g = { image, video, audio, file }[kind]
@@ -102,7 +129,7 @@ export default function LlmCustomDockedPanel({
       <DockedTopBar capability={capability} mode={mode} variant={variant}
         onCapabilityChange={onCapabilityChange} onModeChange={onModeChange} onRequestVariant={onRequestVariant} />
 
-      <MixedAttachmentRow groups={groups} onPickFiles={handlePickFiles} onDelete={handleDelete} onPasteLink={handlePasteLink} />
+      <MixedAttachmentRow groups={groups} getInvalidReason={getInvalidReason} onPickFiles={handlePickFiles} onDelete={handleDelete} onPasteLink={handlePasteLink} />
 
       <LlmPromptInput variant={variant} edges={edges} nodeId={node.id}
         value={params.prompt} onChange={(text) => onParamsChange({ prompt: text })}

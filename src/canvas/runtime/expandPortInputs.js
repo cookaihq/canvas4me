@@ -5,7 +5,7 @@
  * @param {string} targetHandle  端口 id（如 'image'）
  * @param {Array}  edges
  * @param {Array}  nodes
- * @returns {Array<{ url, source, edgeId, sourceNodeId, name, uploading, type? }>}
+ * @returns {Array<{ url, source, edgeId, sourceNodeId, name, uploading, type?, fileSize?, mimeType? }>}
  */
 export function expandPortInputs({ targetNodeId, targetHandle, edges, nodes }) {
   const matchedEdges = edges.filter(e => e.target === targetNodeId && e.targetHandle === targetHandle)
@@ -25,6 +25,8 @@ export function expandPortInputs({ targetNodeId, targetHandle, edges, nodes }) {
       sourceNodeId: src.id,
       name: src.data?.name || src.data?.label || '',
       type: src.data?.subType,
+      fileSize: src.data?.content?.fileSize ?? src.data?._mediaFileSize ?? null,
+      mimeType: src.data?.content?.mimeType ?? null,
       uploading,
     })
   }
