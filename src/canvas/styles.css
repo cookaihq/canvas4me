@@ -784,9 +784,12 @@
 
 /* ─── 节点通用样式 ─── */
 
-/* 覆盖 React Flow 对内置类型 input 节点的默认 padding，保证 NodeResizer 边框与卡片贴合 */
+/* 覆盖 React Flow 对内置类型 input 节点的默认 padding，保证 NodeResizer 边框与卡片贴合;
+   同时去掉 RF 默认 1px 边框 (#1A192B) —— 节点边线由内层 .input-node 单独提供 (圆角 lg),
+   保留外层 RF 边框会出现"外黑直角 + 内灰圆角"双边框的视觉重影. */
 .react-flow__node-input {
   padding: 0;
+  border: 0;
 }
 
 /* ── 端口（handle）视觉与连线终点对齐 ──
@@ -1130,14 +1133,6 @@
 .input-node[data-subtype="video"][data-loaded="true"] {
   border: 0;
   background: transparent;
-}
-
-/* loaded 态同时去掉 React Flow 节点根的默认 1px border (#1A192B);
-   保留它会让 .input-node 的 100%/100% 比 inline style.width/height 各小 2px,
-   contain 比例漂移. :has() 选择器精确锁到加载完的图片/视频节点, 其他态不受影响. */
-.react-flow__node-input:has(.input-node[data-subtype="image"][data-loaded="true"]),
-.react-flow__node-input:has(.input-node[data-subtype="video"][data-loaded="true"]) {
-  border: 0;
 }
 
 .input-node.selected {
@@ -2061,24 +2056,6 @@
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-/* 右下角字数徽章 */
-.renderer-text-count {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  padding: 2px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ac-text-muted);
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--ac-border-subtle);
-  border-radius: 3px;
-  pointer-events: none;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  z-index: 1;
 }
 
 /* 图片渲染器 */

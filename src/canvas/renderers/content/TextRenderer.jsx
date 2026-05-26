@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import { memo, useState, useRef, useEffect, useCallback } from 'react'
 import { useCanvasFacade } from '../../state/canvasFacade'
 
 /**
@@ -7,7 +7,8 @@ import { useCanvasFacade } from '../../state/canvasFacade'
  * - 编辑态渲染原生 textarea，IME 组合期间只更新本地 state，避免打断输入
  * - onBlur / Esc 退出编辑
  * - locked 时双击不进入编辑态
- * - 右下角字数徽章（统计非空白字符）
+ * - 字数显示由 InputNode → NodeMetaRow 的 info 段统一渲染在节点头右侧 ("N 字"),
+ *   此处不再渲染卡内字数徽章
  */
 function TextRenderer({ data, nodeId }) {
   const text = data.content?.text || ''
@@ -18,11 +19,6 @@ function TextRenderer({ data, nodeId }) {
   const composingRef = useRef(false)
   const textareaRef = useRef(null)
   const facade = useCanvasFacade()
-
-  const wordCount = useMemo(
-    () => (editing ? localValue : text).replace(/\s/g, '').length,
-    [text, localValue, editing]
-  )
 
   // 外部 text 变化时同步本地 state（非 IME 组合期间）
   useEffect(() => {
@@ -100,9 +96,6 @@ function TextRenderer({ data, nodeId }) {
           onKeyDown={handleKeyDown}
           placeholder="输入文本..."
         />
-        {localValue && (
-          <div className="renderer-text-count">字数：{wordCount}</div>
-        )}
       </div>
     )
   }
@@ -115,9 +108,6 @@ function TextRenderer({ data, nodeId }) {
       <div className="renderer-text-content">
         {text || <span className="renderer-placeholder">双击输入文本...</span>}
       </div>
-      {text && (
-        <div className="renderer-text-count">字数：{wordCount}</div>
-      )}
       {locked && <div className="renderer-lock-badge">🔒</div>}
     </div>
   )

@@ -250,7 +250,7 @@ function AiCanvasInner({
   useRenderRateMonitor('AiCanvasInner')
 
   // ── ReactFlow 实例 ──
-  const { getViewport, setViewport, screenToFlowPosition, setCenter } = useReactFlow()
+  const { getViewport, setViewport, screenToFlowPosition, setCenter, getNode, getEdges } = useReactFlow()
 
   // ── 画布状态写访问层 —— 所有节点/边的写经此命令式 API ──
   const facade = useCanvasFacade()
@@ -292,6 +292,11 @@ function AiCanvasInner({
   // 折叠 output id 集合(由 CanvasDerivedProvider 内的 FoldedOutputGuard 实时同步)。
   // 给 onSelectionChange 兜底过滤用 —— AiCanvasInner 在 provider 之外, 无法直接读 context。
   const foldedOutputIdsRef = useRef(new Set())
+
+  // 折叠 output → { parentId, parentHandle } 反查表(同步自 FoldedOutputGuard)。
+  // 给 onBeforeDelete 用 —— 删 folded capability parent 时, 需要按 parentId 找出
+  // 它的全部 folded output 一起删, 否则 output 会失去归属变成画布上的孤儿节点。
+  const foldedMapRef = useRef(new Map())
 
   // 折叠过滤 / 边重写 / 序号 / 隐藏入边数 / 下游产物注入 等"派生数据"已下沉到组件层:
   //   - 折叠 output:渲染层不再过滤, 由 outputNodeTypes 的折叠壳渲染为不可见 1×1(保留隐形 Handle)
@@ -1350,6 +1355,55 @@ function AiCanvasInner({
     triggerSave()
   }, [isEditing, facade, triggerSave])
 
+  // 删除前拦截:折叠能力节点(form 'folded')在数据上是 parent capability + 它的
+  // folded output 两个真实节点;用户视觉上只看到一个"折叠节点",删除时只点了 parent。
+  // 这里把对应的 folded output 也加进删除列表, 否则 parent 没了之后 output 失去归属,
+  // withFoldedShell 会从 1×1 透明壳切回完整 OutputNode 渲染, 在画布上变成孤儿节点。
+  //
+  // 关键点:RF 传进来的 edges 是基于"原始 nodes 列表"通过 getConnectedEdges 算出的连接边,
+  // 我们后加的 output 节点的连接边不在里面 —— 必须手动从 store 全量边里捞出来追加,
+  // 否则节点删了边还在, 变成悬空 edge.target 引用。
+  const handleBeforeDelete = useCallback(({ nodes, edges }) => {
+    if (!nodes || nodes.length === 0) return { nodes, edges }
+    const foldedMap = foldedMapRef.current
+    if (foldedMap.size === 0) return { nodes, edges }
+
+    const foldedParentIds = new Set()
+    for (const n of nodes) {
+      if (n.type === 'capability' && isFoldedCapability(n.data?.capability)) {
+        foldedParentIds.add(n.id)
+      }
+    }
+    if (foldedParentIds.size === 0) return { nodes, edges }
+
+    const existingNodeIds = new Set(nodes.map(n => n.id))
+    const extraNodes = []
+    const extraOutputIds = new Set()
+    for (const [outputId, info] of foldedMap) {
+      if (!foldedParentIds.has(info.parentId)) continue
+      if (existingNodeIds.has(outputId)) continue
+      const n = getNode(outputId)
+      if (!n) continue
+      extraNodes.push(n)
+      extraOutputIds.add(outputId)
+    }
+    if (extraNodes.length === 0) return { nodes, edges }
+
+    // 补齐新加 output 节点的所有连接边 (入边 + 出边), 避免节点删了边悬空。
+    // 注意 edge.deletable 默认为 true 时才能被删, 与 RF 内置过滤逻辑保持一致。
+    const existingEdgeIds = new Set(edges.map(e => e.id))
+    const extraEdges = []
+    for (const e of getEdges()) {
+      if (e.deletable === false) continue
+      if (existingEdgeIds.has(e.id)) continue
+      if (extraOutputIds.has(e.source) || extraOutputIds.has(e.target)) {
+        extraEdges.push(e)
+      }
+    }
+
+    return { nodes: [...nodes, ...extraNodes], edges: [...edges, ...extraEdges] }
+  }, [getNode, getEdges])
+
   // ReactFlow onMoveEnd 稳定引用 (内联 arrow 会让 StoreUpdater 跟踪的字段每渲染都
   // 视为变更, 触发不必要的 store.setState 与级联订阅唤醒, 见模块顶 DEFAULT_EDGE_OPTIONS 注释)
   const handleMoveEnd = useCallback(() => {
@@ -1548,7 +1602,7 @@ function AiCanvasInner({
 
   return (
     <CanvasDerivedProvider>
-    <FoldedOutputGuard foldedIdsRef={foldedOutputIdsRef} />
+    <FoldedOutputGuard foldedIdsRef={foldedOutputIdsRef} foldedMapRef={foldedMapRef} />
     <CanvasIdContext.Provider value={canvasId}>
     <PanelContext.Provider value={panelContextValue}>
     <CapabilityRuntimeContext.Provider value={capabilityRuntimeValue}>
@@ -1596,6 +1650,7 @@ function AiCanvasInner({
               onNodeDragStop={onNodeDragStop}
               onMoveEnd={handleMoveEnd}
               onConnect={onConnect}
+              onBeforeDelete={handleBeforeDelete}
               isValidConnection={isValidConnection}
               onPaneContextMenu={onPaneContextMenu}
               onNodeContextMenu={onNodeContextMenu}
@@ -1618,12 +1673,7 @@ function AiCanvasInner({
               proOptions={RF_PRO_OPTIONS}
             >
               <Background variant="dots" gap={20} size={1} color="#d0d0d0" />
-              <MiniMap
-                position="bottom-right"
-                style={{ width: 150, height: 100 }}
-                zoomable
-                pannable
-              />
+              <FoldedAwareMiniMap />
               <Controls position="bottom-right" style={{ right: 160 }} />
               <Panel position="bottom-right" style={{ right: 200 }}>
                 <CanvasZoomIndicator />
@@ -1711,17 +1761,20 @@ function AiCanvasInner({
   )
 }
 
-// 折叠 output 守卫:在 CanvasDerivedProvider 内订阅折叠映射, 做两件事 ——
+// 折叠 output 守卫:在 CanvasDerivedProvider 内订阅折叠映射, 做三件事 ——
 //   ① 把折叠 output id 集合同步到 ref(供 onSelectionChange 兜底过滤);
-//   ② 低频幂等地把折叠 output 的 selectable 置 false(只在折叠集合变化时跑,
+//   ② 把整张 outputId→{parentId, parentHandle} 反查表同步到 ref(供 onBeforeDelete
+//      连带删除 folded output);
+//   ③ 低频幂等地把折叠 output 的 selectable 置 false(只在折叠集合变化时跑,
 //      且只改与目标值不同的节点 → 无变化直接返回原数组, 不触发 setNodes 风暴)。
 // 折叠态下 output 渲染为不可见壳, 不应被框选/点选命中。
-function FoldedOutputGuard({ foldedIdsRef }) {
+function FoldedOutputGuard({ foldedIdsRef, foldedMapRef }) {
   const foldedMap = useFoldedOutputMap()
   const facade = useCanvasFacade()
   useEffect(() => {
     const ids = new Set(foldedMap.keys())
     foldedIdsRef.current = ids
+    foldedMapRef.current = foldedMap
     facade.batchUpdateNodes((nds) => {
       let changed = false
       const nextNodes = nds.map((n) => {
@@ -1741,8 +1794,35 @@ function FoldedOutputGuard({ foldedIdsRef }) {
       })
       return changed ? nextNodes : nds
     })
-  }, [foldedMap, facade, foldedIdsRef])
+  }, [foldedMap, facade, foldedIdsRef, foldedMapRef])
   return null
+}
+
+// 折叠感知的 MiniMap:折叠态 output 节点在主画布是 1×1 透明壳, 但数据层带 style.width/height
+// (200×160 / 300×200 等档位), RF measured 量到的就是这个尺寸 → MiniMap 默认会按这个尺寸
+// 画一个小方块, 视觉上多出来一个不该有的"节点"。这里用 nodeColor / nodeStrokeColor 把折叠
+// output 涂成透明, 让 MiniMap 跳过其方块绘制。不能用 node.hidden=true —— 那会让 RF 整个不
+// 渲染节点 DOM 含 Handle, 破坏跨节点边的端点重写 (见 outputNodeTypes.jsx 注释)。
+function FoldedAwareMiniMap() {
+  const foldedMap = useFoldedOutputMap()
+  const nodeColor = useCallback(
+    (n) => (foldedMap.has(n.id) ? 'transparent' : '#fff'),
+    [foldedMap],
+  )
+  const nodeStrokeColor = useCallback(
+    (n) => (foldedMap.has(n.id) ? 'transparent' : '#bbb'),
+    [foldedMap],
+  )
+  return (
+    <MiniMap
+      position="bottom-right"
+      style={{ width: 150, height: 100 }}
+      zoomable
+      pannable
+      nodeColor={nodeColor}
+      nodeStrokeColor={nodeStrokeColor}
+    />
+  )
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

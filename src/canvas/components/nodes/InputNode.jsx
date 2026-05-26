@@ -46,12 +46,13 @@ function InputNode({ id, data, selected }) {
 
   // 节点操作栏 (含装饰层注入的额外按钮如"加入素材库") 由 NodeToolbarPortal 在选中态统一渲染.
 
-  // NodeMetaRow info 段: 图片/视频显示分辨率·大小, 音频/文件显示时长/大小.
-  // 数据由 ImageRenderer/VideoRenderer 在加载完成后回写到 data._mediaWidth/_mediaHeight
+  // NodeMetaRow info 段: 图片/视频显示分辨率·大小, 音频/文件显示时长/大小,
+  // 文本节点显示字数 (非空白字符数, 格式 "N 字").
+  // 媒体元数据由 ImageRenderer/VideoRenderer 在加载完成后回写到 data._mediaWidth/_mediaHeight
   // /_mediaDuration/_mediaFileSize, 这里读出格式化为 info 文本.
   const metaInfo = useMemo(
     () => formatMetaInfo(data.subType, data),
-    [data.subType, data._mediaWidth, data._mediaHeight, data._mediaDuration, data._mediaFileSize]
+    [data.subType, data._mediaWidth, data._mediaHeight, data._mediaDuration, data._mediaFileSize, data.content?.text]
   )
 
   // Handle id = data.subType(见下方 Handle 渲染)。老版本硬编码 id="output"改成按
@@ -164,9 +165,15 @@ function InputNode({ id, data, selected }) {
  * - 图片/视频: `1920×1080 · 12.4 M`
  * - 音频: `00:06 · 421 K` (有大小时附加)
  * - 文件: `1.2 M`
- * - 其他 subType (text/json/llm-context): 不展示 (null)
+ * - 文本: `N 字` (非空白字符数; 空文本不展示)
+ * - 其他 subType (json/llm-context): 不展示 (null)
  */
 function formatMetaInfo(subType, data) {
+  if (subType === 'text') {
+    const text = data?.content?.text || ''
+    const count = text.replace(/\s/g, '').length
+    return count > 0 ? `${count} 字` : null
+  }
   return formatMediaMeta(subType, {
     width: data?._mediaWidth,
     height: data?._mediaHeight,
