@@ -1067,6 +1067,7 @@ function AiCanvasInner({
     isEditing,
     getViewport,
     onImagePaste,
+    nodeZCounterRef,
   })
 
   // ━━━ 画布加载 ━━━
@@ -1434,6 +1435,7 @@ function AiCanvasInner({
     viewport,
     clipboard: { paste, copySelected, selectAll, deleteSelected },
     onOpenPanel: setSelectedNodeId,
+    nodeZCounterRef,
   })
 
   // ━━━ P4 工具栏操作 ━━━
@@ -1445,7 +1447,7 @@ function AiCanvasInner({
   })
 
   // 粘贴图片：立即创建节点（blob URL 预览），后台上传完成后替换为 OSS URL
-  const { handlePasteImage } = useCanvasClipboardImage({ isEditing, viewport, uploader })
+  const { handlePasteImage } = useCanvasClipboardImage({ isEditing, viewport, uploader, nodeZCounterRef })
 
   useEffect(() => {
     handlePasteImageRef.current = handlePasteImage
@@ -1466,7 +1468,8 @@ function AiCanvasInner({
       const position = { x: center.x + jitter(), y: center.y + jitter() }
       const node = buildMaterialNode(material, position)
       if (!node) return
-      facade.addNodes(node)
+      // bring-to-front: 写 zIndex = counter++, 避免新节点被点过的老节点压底
+      facade.addNodes({ ...node, zIndex: nodeZCounterRef.current++ })
     })
   }, [readonly, screenToFlowPosition, facade])
 
@@ -1491,6 +1494,7 @@ function AiCanvasInner({
   const { isDragOver, onDragOver, onDragLeave, onDrop } = useCanvasDragDrop({
     isEditing,
     uploader,
+    nodeZCounterRef,
   })
 
   // ── 临时诊断: 找出 AiCanvasInner re-render 风暴的源头 (定位完删除) ──
@@ -1693,7 +1697,7 @@ function AiCanvasInner({
               {/* 节点选中态统一工具栏 — 单一 NodeToolbar 含 3 段按钮组 (debug / actions / media),
                   竖线分隔, align="center" 浮在节点正上方居中.
                   见 docs/ui-standards/components-canvas.html#node-overlays */}
-              <NodeToolbarPortal />
+              <NodeToolbarPortal nodeZCounterRef={nodeZCounterRef} />
 
               {/* 把 zoom 写到 .react-flow 的 CSS 变量 --rf-zoom 上,
                   供端口标签 / 圆点 等"反向缩放"使用 */}

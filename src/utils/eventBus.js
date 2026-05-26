@@ -11,6 +11,7 @@ export const EVENTS = {
   TASK_UPDATED: 'task-updated',           // 任务更新（API 返回、转存完成等）
   TASK_CREATING: 'task-creating',         // 任务创建中（乐观更新）
   ADD_MATERIAL_TO_CANVAS: 'add-material-to-canvas', // 素材库预览 Modal 请求把素材加到画布视口中心
+  MATERIAL_LIBRARY_ITEM_ADDED: 'material-library-item-added', // 画布节点 → 素材库新增 item; payload {scope, folderId, item}
 }
 
 /**

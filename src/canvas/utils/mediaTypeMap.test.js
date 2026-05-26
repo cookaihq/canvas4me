@@ -19,8 +19,8 @@ test('mapMediaTypeToSubType: audio → audio', () => {
   assert.equal(mapMediaTypeToSubType('audio'), 'audio')
 })
 
-test('mapMediaTypeToSubType: text → null（drop 不支持，专门 picker 创建）', () => {
-  assert.equal(mapMediaTypeToSubType('text'), null)
+test('mapMediaTypeToSubType: text → text', () => {
+  assert.equal(mapMediaTypeToSubType('text'), 'text')
 })
 
 test('mapMediaTypeToSubType: 未知类型 → null', () => {

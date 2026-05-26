@@ -11,6 +11,12 @@ import apiClient from './client'
 
 const BASE = '/api/apps/ai-canvas/v1/material-library'
 
+// === DEBUG 延时（调试素材库 loading UI 用） ===
+// 仅作用于 3 个 list 接口（folders/items/favorites）；写接口不加。
+// 改 0 = 关闭；改正整数（如 800）= 强制 sleep 那么多 ms，方便观察骨架 / spinner / SWR 切换。
+const DEBUG_LIST_DELAY_MS = 0
+const sleep = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve())
+
 export const materialLibrary = {
   folders: {
     /**
@@ -19,7 +25,10 @@ export const materialLibrary = {
      * @param {{scope: 'personal'|'team'}} params
      * @returns {Promise<{folders: Array<Folder>}>}
      */
-    list: ({ scope }) => apiClient.post(`${BASE}/folders/list`, { scope }),
+    list: async ({ scope }) => {
+      await sleep(DEBUG_LIST_DELAY_MS)
+      return apiClient.post(`${BASE}/folders/list`, { scope })
+    },
 
     /**
      * 创建文件夹。后端校验深度 ≤ 3、同 parent 下 name 不重复。
@@ -54,8 +63,10 @@ export const materialLibrary = {
      * @param {{scope, folder_id?, search?, limit?, offset?}} params
      * @returns {Promise<{items: Array<Material>, total: number, limit: number, offset: number}>}
      */
-    list: ({ scope, folder_id = null, search, limit = 50, offset = 0 }) =>
-      apiClient.post(`${BASE}/items/list`, { scope, folder_id, search, limit, offset }),
+    list: async ({ scope, folder_id = null, search, limit = 50, offset = 0 }) => {
+      await sleep(DEBUG_LIST_DELAY_MS)
+      return apiClient.post(`${BASE}/items/list`, { scope, folder_id, search, limit, offset })
+    },
 
     /**
      * 注册一条素材（文件已 OSS 上传完，或来源画布节点）。
@@ -89,8 +100,10 @@ export const materialLibrary = {
      * @param {{limit?: number, offset?: number}} params
      * @returns {Promise<{favorites: Array<{id, material_id, created_at, item: Material}>, total, limit, offset}>}
      */
-    list: ({ limit = 50, offset = 0 } = {}) =>
-      apiClient.post(`${BASE}/favorites/list`, { limit, offset }),
+    list: async ({ limit = 50, offset = 0 } = {}) => {
+      await sleep(DEBUG_LIST_DELAY_MS)
+      return apiClient.post(`${BASE}/favorites/list`, { limit, offset })
+    },
 
     /**
      * 加收藏，重复调用幂等。

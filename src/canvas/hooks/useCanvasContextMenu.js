@@ -28,6 +28,7 @@ import { useCanvasFacade } from '../state/canvasFacade'
  * @param {object}  opts.viewport                        useCanvasViewport 返回值
  * @param {object}  opts.clipboard                       { paste, copySelected, selectAll, deleteSelected }
  * @param {(nodeId: string) => void} opts.onOpenPanel    打开节点面板回调
+ * @param {object}  opts.nodeZCounterRef                 画布 z-index 单调计数器 ref(bring-to-front)
  */
 export default function useCanvasContextMenu({
   isEditing,
@@ -38,6 +39,7 @@ export default function useCanvasContextMenu({
   viewport,
   clipboard,
   onOpenPanel,
+  nodeZCounterRef,
 }) {
   const { screenToFlowPosition } = useReactFlow()
   const facade = useCanvasFacade()
@@ -87,7 +89,7 @@ export default function useCanvasContextMenu({
     switch (action) {
       case 'insertInput': {
         const node = createInputNode(payload.subType, pos)
-        facade.addNodes(node)
+        facade.addNodes({ ...node, zIndex: nodeZCounterRef.current++ })
         break
       }
       case 'insertCapability': {
@@ -97,14 +99,18 @@ export default function useCanvasContextMenu({
         const { nodes: created, edges } = createCapabilityNode(payload.nodeType, pos, capability, { mode })
         facade.batchUpdateNodes(prev => [
           ...prev.map(n => (n.selected ? { ...n, selected: false } : n)),
-          ...created.map((n, i) => (i === 0 ? { ...n, selected: true } : n)),
+          ...created.map((n, i) => ({
+            ...n,
+            ...(i === 0 ? { selected: true } : {}),
+            zIndex: nodeZCounterRef.current++,
+          })),
         ])
         if (edges.length) facade.addEdges(edges)
         break
       }
       case 'insertNote': {
         const node = createNoteNode(pos)
-        facade.addNodes(node)
+        facade.addNodes({ ...node, zIndex: nodeZCounterRef.current++ })
         break
       }
       case 'paste':
@@ -138,7 +144,7 @@ export default function useCanvasContextMenu({
               target: newNodeId,
               selected: false,
             }))
-          facade.addNodes(newNode)
+          facade.addNodes({ ...newNode, zIndex: nodeZCounterRef.current++ })
           if (incomingEdges.length > 0) {
             facade.addEdges(incomingEdges)
           }
@@ -166,7 +172,7 @@ export default function useCanvasContextMenu({
     }
   }, [
     isEditing, contextMenu, viewport, nodes, edges,
-    setNodes, setEdges, clipboard, onOpenPanel, facade,
+    setNodes, setEdges, clipboard, onOpenPanel, facade, nodeZCounterRef,
   ])
 
   return {

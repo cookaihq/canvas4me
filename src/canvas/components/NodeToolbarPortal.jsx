@@ -47,7 +47,7 @@ const MEDIA_UPLOAD_CONFIG = {
 // 详见 docs/ui-standards/components-canvas.html#node-overlays.
 const TOOLBAR_OFFSET = 26
 
-function NodeToolbarPortal() {
+function NodeToolbarPortal({ nodeZCounterRef }) {
   // 全量 nodes/edges 从 store 响应式读取 — 媒体识别 (resolveMediaContext) 需要
   // 沿能力节点 → 下游 outputNode 拿产物 url(折叠态 outputNode 也在其中)
   const nodes = useStoreNodes()
@@ -84,6 +84,7 @@ function NodeToolbarPortal() {
           colorPickerOpenId={colorPickerOpenId}
           setColorPickerOpenId={setColorPickerOpenId}
           onOpenDataModal={setModalNodeId}
+          nodeZCounterRef={nodeZCounterRef}
         />
       ))}
 
@@ -110,6 +111,7 @@ function NodeToolbarRow({
   colorPickerOpenId,
   setColorPickerOpenId,
   onOpenDataModal,
+  nodeZCounterRef,
 }) {
   const { deleteElements, getNode, getNodes, updateNodeData } = useReactFlow()
   const facade = useCanvasFacade()
@@ -211,8 +213,8 @@ function NodeToolbarRow({
         canvasSeq: undefined,
       },
     }
-    facade.addNodes([newNode])
-  }, [nodeId, getNode, facade])
+    facade.addNodes([{ ...newNode, zIndex: nodeZCounterRef.current++ }])
+  }, [nodeId, getNode, facade, nodeZCounterRef])
 
   const handleDelete = useCallback((e) => {
     e.stopPropagation()

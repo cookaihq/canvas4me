@@ -21,10 +21,12 @@ import { useCanvasFacade } from '../state/canvasFacade'
  * @param {object}   opts
  * @param {boolean}  opts.isEditing
  * @param {Function} opts.setNodes
- * @param {object}   opts.uploader  useUploader() 返回值
+ * @param {object}   opts.uploader            useUploader() 返回值
+ * @param {object}   opts.nodeZCounterRef     画布 z-index 单调计数器 ref(bring-to-front);
+ *                                            插入新节点时写 zIndex = counter++,避免被点过的老节点压底
  * @returns {{ isDragOver, onDragOver, onDragLeave, onDrop }}
  */
-export default function useCanvasDragDrop({ isEditing, setNodes, uploader }) {
+export default function useCanvasDragDrop({ isEditing, setNodes, uploader, nodeZCounterRef }) {
   const { screenToFlowPosition } = useReactFlow()
   const facade = useCanvasFacade()
   const [isDragOver, setIsDragOver] = useState(false)
@@ -110,7 +112,7 @@ export default function useCanvasDragDrop({ isEditing, setNodes, uploader }) {
         const payload = JSON.parse(materialPayload)
         const node = buildMaterialNode(payload, dropPos)
         if (!node) return
-        facade.addNodes(node)
+        facade.addNodes({ ...node, zIndex: nodeZCounterRef.current++ })
         return
       } catch (err) {
         console.warn('[material drop] payload 解析失败', err)
@@ -146,14 +148,14 @@ export default function useCanvasDragDrop({ isEditing, setNodes, uploader }) {
         },
       })
 
-      // 立即添加节点
-      facade.addNodes(node)
+      // 立即添加节点(bring-to-front: 写 zIndex = counter++)
+      facade.addNodes({ ...node, zIndex: nodeZCounterRef.current++ })
 
       // 注册 File 引用（重试用），并启动上传
       registerFile(node.id, file, () => uploadToNode(node.id, file))
       void uploadToNode(node.id, file)
     })
-  }, [isEditing, screenToFlowPosition, setNodes, uploadToNode, facade])
+  }, [isEditing, screenToFlowPosition, setNodes, uploadToNode, facade, nodeZCounterRef])
 
   return { isDragOver, onDragOver, onDragLeave, onDrop }
 }

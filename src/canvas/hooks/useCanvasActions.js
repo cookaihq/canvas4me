@@ -15,9 +15,10 @@ import { useCanvasFacade } from '../state/canvasFacade'
  *   isEditing: boolean,
  *   getViewport: Function,
  *   onImagePaste?: (file: File) => void,
+ *   nodeZCounterRef: { current: number },   // 画布 z-index 单调计数器(bring-to-front)
  * }} opts
  */
-export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isEditing, getViewport, onImagePaste }) {
+export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isEditing, getViewport, onImagePaste, nodeZCounterRef }) {
   const facade = useCanvasFacade()
   const clipboardRef = useRef({ nodes: [], edges: [] })
 
@@ -82,11 +83,12 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
 
     // 节点编号由 canvas/index.jsx 用 computeNodeSeqMap 派生, 此处不再写 canvasSeq
     // 粘贴后让新节点成为唯一选中: 先取消现有选中, 再加入 selected:true 的新节点/边
+    // bring-to-front: 给每个粘贴节点写一个比当前所有节点高的 zIndex
     facade.batchUpdateNodes(prev => prev.map(n => (n.selected ? { ...n, selected: false } : n)))
     facade.batchUpdateEdges(prev => prev.map(e => (e.selected ? { ...e, selected: false } : e)))
-    facade.addNodes(newNodes)
+    facade.addNodes(newNodes.map(n => ({ ...n, zIndex: nodeZCounterRef.current++ })))
     facade.addEdges(newEdges)
-  }, [facade])
+  }, [facade, nodeZCounterRef])
 
   // 删除选中节点和连线
   // 能力节点 → 输出节点 的连线受保护，不能单独删除；只有在输出节点本身被删除时跟随清理。

@@ -14,12 +14,13 @@ import { useCanvasFacade } from '../state/canvasFacade'
  *
  * @param {object} opts
  * @param {boolean} opts.isEditing
- * @param {object}  opts.viewport          useCanvasViewport() 返回值
+ * @param {object}  opts.viewport            useCanvasViewport() 返回值
  * @param {Function} opts.setNodes
- * @param {object}  opts.uploader          useUploader() 返回值
+ * @param {object}  opts.uploader            useUploader() 返回值
+ * @param {object}  opts.nodeZCounterRef     画布 z-index 单调计数器 ref(bring-to-front)
  * @returns {{ handlePasteImage: (file: File) => Promise<void> }}
  */
-export default function useCanvasClipboardImage({ isEditing, viewport, setNodes, uploader }) {
+export default function useCanvasClipboardImage({ isEditing, viewport, setNodes, uploader, nodeZCounterRef }) {
   const facade = useCanvasFacade()
 
   const handlePasteImage = useCallback(async (file) => {
@@ -34,7 +35,7 @@ export default function useCanvasClipboardImage({ isEditing, viewport, setNodes,
       name: file.name,
       uploading: true,
     }), center)
-    facade.addNodes(node)
+    facade.addNodes({ ...node, zIndex: nodeZCounterRef.current++ })
     viewport.panCanvasTo(center)
 
     try {
@@ -47,7 +48,7 @@ export default function useCanvasClipboardImage({ isEditing, viewport, setNodes,
       // 延迟释放 blob,给 React 一次重渲染的时间切换到 OSS URL
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000)
     }
-  }, [isEditing, viewport, setNodes, uploader, facade])
+  }, [isEditing, viewport, setNodes, uploader, facade, nodeZCounterRef])
 
   return { handlePasteImage }
 }
