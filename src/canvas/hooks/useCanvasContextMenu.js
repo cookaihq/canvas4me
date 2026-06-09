@@ -5,6 +5,7 @@ import {
   createInputNode,
   createCapabilityNode,
   createNoteNode,
+  cloneNodeWithFoldedOutput,
 } from '../utils/nodeFactory'
 import { resolveInitialCapability } from '../utils/capabilityDefaults'
 import { CAPABILITY_STACK_GAP } from '../constants/spacing'
@@ -29,6 +30,7 @@ import { useCanvasFacade } from '../state/canvasFacade'
  * @param {object}  opts.clipboard                       { paste, copySelected, selectAll, deleteSelected }
  * @param {(nodeId: string) => void} opts.onOpenPanel    打开节点面板回调
  * @param {object}  opts.nodeZCounterRef                 画布 z-index 单调计数器 ref(bring-to-front)
+ * @param {object}  opts.groupActions                    { createGroup, ungroup } 分组操作
  */
 export default function useCanvasContextMenu({
   isEditing,
@@ -40,6 +42,7 @@ export default function useCanvasContextMenu({
   clipboard,
   onOpenPanel,
   nodeZCounterRef,
+  groupActions,
 }) {
   const { screenToFlowPosition } = useReactFlow()
   const facade = useCanvasFacade()
@@ -127,15 +130,14 @@ export default function useCanvasContextMenu({
           const rawH = origin.measured?.height ?? origin.height ?? origin.style?.height
           const height = typeof rawH === 'number' ? rawH : parseFloat(rawH) || 200
           const now = Date.now()
-          const prefix = origin.id.split('-')[0]
-          const newNodeId = `${prefix}-dup-${now}`
-          const newNode = {
-            ...origin,
-            id: newNodeId,
-            position: { x: origin.position.x, y: origin.position.y + height + CAPABILITY_STACK_GAP },
-            selected: false,
-            data: { ...JSON.parse(JSON.stringify(origin.data)), locked: false, canvasSeq: undefined },
-          }
+          const position = { x: origin.position.x, y: origin.position.y + height + CAPABILITY_STACK_GAP }
+          // cloneNodeWithFoldedOutput: 普通节点单克隆; 折叠能力节点连下游产物输出一起克隆(副本带产物);
+          // 内部走 genId(防撞号) + sanitizeClonedNodeData(斩断任务身份). 入边重指向新能力节点.
+          const { nodes: clonedNodes, edges: clonedEdges } = cloneNodeWithFoldedOutput(origin, {
+            allNodes: nodes,
+            position,
+          })
+          const newNodeId = clonedNodes[0].id
           const incomingEdges = edges
             .filter(e => e.target === origin.id)
             .map((e, i) => ({
@@ -144,10 +146,9 @@ export default function useCanvasContextMenu({
               target: newNodeId,
               selected: false,
             }))
-          facade.addNodes({ ...newNode, zIndex: nodeZCounterRef.current++ })
-          if (incomingEdges.length > 0) {
-            facade.addEdges(incomingEdges)
-          }
+          facade.addNodes(clonedNodes.map(n => ({ ...n, zIndex: nodeZCounterRef.current++ })))
+          if (clonedEdges.length > 0) facade.addEdges(clonedEdges)
+          if (incomingEdges.length > 0) facade.addEdges(incomingEdges)
         } else {
           clipboard.copySelected()
         }
@@ -167,12 +168,18 @@ export default function useCanvasContextMenu({
         })
         break
       }
+      case 'createGroup':
+        groupActions?.createGroup()
+        break
+      case 'ungroup':
+        groupActions?.ungroup(payload?.nodeId)
+        break
       default:
         break
     }
   }, [
     isEditing, contextMenu, viewport, nodes, edges,
-    setNodes, setEdges, clipboard, onOpenPanel, facade, nodeZCounterRef,
+    setNodes, setEdges, clipboard, onOpenPanel, facade, nodeZCounterRef, groupActions,
   ])
 
   return {

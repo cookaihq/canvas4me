@@ -98,6 +98,22 @@ export async function probeUrlsBatch(urls, opts = {}) {
   return results
 }
 
+// 只有"文件确实不存在 / 无权访问"才值得自愈(从缓存重传换新 URL)。
+// 跨域被拦 / 断网 / DNS 统一归为 unknown,超时、瞬时 5xx 同样无法据此断定文件失效——
+// 这些 URL 由后端服务端取用(不受浏览器跨域限制),前端若误判失效会错误地挡掉提交。
+const HEALABLE_REASONS = new Set([REASON.NOT_FOUND, REASON.FORBIDDEN])
+
+/**
+ * 探测结果是否表示"文件确实失效、值得自愈"。
+ * 仅 404 / 403(401)为真;ok、unknown、timeout、server-error 一律为假。
+ * @param {{ ok: boolean, reason?: string }} result
+ * @returns {boolean}
+ */
+export function isHealableProbeResult(result) {
+  if (!result || result.ok) return false
+  return HEALABLE_REASONS.has(result.reason)
+}
+
 export { REASON as LOAD_ERROR_REASONS }
 
 // 错误原因 → 人类可读文案（各 Renderer 共用）

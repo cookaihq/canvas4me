@@ -18,6 +18,7 @@ const NODE_TOP_WHITELIST = ['id', 'type', 'position', 'width', 'height', 'parent
 const DATA_BLACKLIST = [
   '_draft', '_mediaWidth', '_mediaHeight', '_mediaFileSize', '_mediaDuration',
   '_imageAspect', '_ignoredCount', 'canvasSeq', 'hiddenEdgeCount', 'downstreamOutput', 'userTouched',
+  '_dropTarget',
 ]
 
 function sanitizePersistedContent(content) {

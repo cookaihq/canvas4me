@@ -93,14 +93,16 @@ export default function LlmTextDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      <LlmPromptInput
-        variant={variant}
-        edges={edges}
-        nodeId={node.id}
-        value={params.prompt}
-        onChange={(text) => onParamsChange({ prompt: text })}
-        placeholder="输入你想问的内容..."
-      />
+      <div className="docked-panel-scroll">
+        <LlmPromptInput
+          variant={variant}
+          edges={edges}
+          nodeId={node.id}
+          value={params.prompt}
+          onChange={(text) => onParamsChange({ prompt: text })}
+          placeholder="输入你想问的内容..."
+        />
+      </div>
 
       <DockedBottomBar
         capability={capability}

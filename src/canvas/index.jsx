@@ -20,6 +20,7 @@ import '@/capabilities'
 import InputNode from './components/nodes/InputNode'
 import CapabilityNode from './components/nodes/CapabilityNode'
 import NoteNode from './components/nodes/NoteNode'
+import GroupNode from './components/nodes/GroupNode'
 import CustomEdge from './components/edges/CustomEdge'
 import { OUTPUT_NODE_TYPES } from './registry/outputNodeTypes'
 
@@ -31,6 +32,7 @@ import DockedPanel from './panels/DockedPanel'
 import Toolbar from './components/Toolbar'
 import BrandLogo from './components/BrandLogo'
 import NodeToolbarPortal from './components/NodeToolbarPortal'
+import MultiSelectToolbar from './components/MultiSelectToolbar'
 import ZoomCssVarSetter from './components/ZoomCssVarSetter'
 import TopRightCluster from './components/TopRightCluster'
 import CanvasContextMenu from './components/CanvasContextMenu'
@@ -52,6 +54,8 @@ import useCanvasPanel from './hooks/useCanvasPanel'
 import useCanvasConnection from './hooks/useCanvasConnection'
 import useCanvasPanMode from './hooks/useCanvasPanMode'
 import useBoxSelectEdges from './hooks/useBoxSelectEdges'
+import useGroupActions from './hooks/useGroupActions'
+import useBatchDownload from './hooks/useBatchDownload'
 
 // ─── 状态写访问层 ───
 import { useCanvasFacade } from './state/canvasFacade'
@@ -86,6 +90,9 @@ import { setCanvasSnapshotProvider } from '@/utils/errorReport'
 import { useRenderRateMonitor, useRenderDiff } from '@/utils/renderRateMonitor'
 import { onEvent, EVENTS } from '@/utils/eventBus'
 import { buildMaterialNode } from './utils/buildMaterialNode'
+import { expandGroupDeletion } from './utils/groupGrouping'
+import { applyDragToGroups } from './utils/groupDrag'
+import { GROUP_PADDING } from './constants/group'
 
 // ─── 媒体缓存 ───
 import { CanvasIdContext } from './contexts/CanvasIdContext'
@@ -229,6 +236,7 @@ const NODE_TYPES = {
   input: InputNode,
   capability: CapabilityNode,
   note: NoteNode,
+  group: GroupNode,
   ...OUTPUT_NODE_TYPES,
 }
 const EDGE_TYPES = { custom: CustomEdge }
@@ -1061,13 +1069,20 @@ function AiCanvasInner({
     handlePasteImageRef.current?.(file)
   }, [])
 
-  const { copySelected, paste, deleteSelected, selectAll } = useCanvasActions({
+  // 必须在 useCanvasActions 之前调用: 下面把 createGroup/ungroup 作为 onGroup/onUngroup 传进去, 顺序颠倒会 TDZ
+  const { createGroup, ungroup } = useGroupActions({ isEditing, triggerSave })
+
+  const { downloadSelected } = useBatchDownload()
+
+  const { copySelected, paste, duplicateSelected, deleteSelected, selectAll } = useCanvasActions({
     nodes,
     edges,
     isEditing,
     getViewport,
     onImagePaste,
     nodeZCounterRef,
+    onGroup: createGroup,
+    onUngroup: () => ungroup(),
   })
 
   // ━━━ 画布加载 ━━━
@@ -1305,14 +1320,57 @@ function AiCanvasInner({
 
   // ━━━ P5 拖拽保存 ━━━
 
-  const onNodeDragStop = useCallback((_event, node) => {
+  // 拖动过程中实时高亮"松手会落入"的目标组(单个非 group 节点拖动才激活)
+  const onNodeDrag = useCallback((_event, node, draggedNodes) => {
     if (!isEditing) return
-    // 拖拽后标记为手动定位
-    facade.batchUpdateNodes(nds => nds.map(n =>
-      n.id === node.id && n.data?.autoPositioned
-        ? { ...n, data: { ...n.data, autoPositioned: false } }
-        : n
-    ))
+    const dragged = draggedNodes && draggedNodes.length ? draggedNodes : [node]
+    const all = facade.getNodes()
+    const groups = all.filter(n => n.type === 'group')
+    if (groups.length === 0) return
+    let hitGid = null
+    if (dragged.length === 1 && dragged[0].type !== 'group') {
+      const n = all.find(x => x.id === dragged[0].id)
+      if (n) {
+        const gid = n.parentId || null
+        const origin = gid ? (all.find(g => g.id === gid)?.position || { x: 0, y: 0 }) : { x: 0, y: 0 }
+        const abs = { x: n.position.x + origin.x, y: n.position.y + origin.y }
+        const w = n.measured?.width ?? 0, h = n.measured?.height ?? 0
+        const center = { x: abs.x + w / 2, y: abs.y + h / 2 }
+        for (const g of groups) {
+          const gr = { x: g.position.x, y: g.position.y, width: g.style?.width || 0, height: g.style?.height || 0 }
+          if (center.x >= gr.x && center.x <= gr.x + gr.width && center.y >= gr.y && center.y <= gr.y + gr.height) { hitGid = g.id; break }
+        }
+      }
+    }
+    // 只在状态变化时写, 避免每帧 churn
+    facade.batchUpdateNodes(nds => {
+      let changed = false
+      const next = nds.map(g => {
+        if (g.type !== 'group') return g
+        const want = g.id === hitGid
+        const has = !!g.data?._dropTarget
+        if (want === has) return g
+        changed = true
+        return { ...g, data: { ...g.data, _dropTarget: want } }
+      })
+      return changed ? next : nds
+    })
+  }, [isEditing, facade])
+
+  const onNodeDragStop = useCallback((_event, node, draggedNodes) => {
+    if (!isEditing) return
+    const draggedIds = new Set((draggedNodes && draggedNodes.length ? draggedNodes : [node]).map(n => n.id))
+    facade.batchUpdateNodes(nds => {
+      // 1) 清被拖节点的 autoPositioned
+      let next = nds.map(n => (draggedIds.has(n.id) && n.data?.autoPositioned)
+        ? { ...n, data: { ...n.data, autoPositioned: false } } : n)
+      // 2) 进出组 + 受影响组几何重算
+      next = applyDragToGroups(next, draggedIds, GROUP_PADDING)
+      // 3) 清掉所有组的 _dropTarget 高亮(松手后不应再有高亮残留)
+      next = next.map(n => (n.type === 'group' && n.data?._dropTarget)
+        ? { ...n, data: { ...n.data, _dropTarget: false } } : n)
+      return next
+    })
     triggerSave()
   }, [isEditing, facade, triggerSave])
 
@@ -1321,6 +1379,7 @@ function AiCanvasInner({
   // 导致 meta 飞到相邻未选中节点内部的视觉问题.
   const onNodeClick = useCallback((_event, node) => {
     if (!isEditing) return
+    if (node.type === 'group') return // 豁免: group 须垫底, 不参与 bring-to-front(spec §9.6)
     const nextZ = nodeZCounterRef.current++
     facade.batchUpdateNodes(nds => nds.map(n => (
       n.id === node.id ? { ...n, zIndex: nextZ } : n
@@ -1344,7 +1403,7 @@ function AiCanvasInner({
     const next = new Set(visibleSelected.map(n => n.id))
     lastSelectedIdsRef.current = next
     if (!isEditing) return
-    const newlySelected = visibleSelected.filter(n => !prev.has(n.id))
+    const newlySelected = visibleSelected.filter(n => !prev.has(n.id) && n.type !== 'group')
     if (newlySelected.length === 0) return
     const bumps = new Map()
     for (const n of newlySelected) {
@@ -1364,20 +1423,28 @@ function AiCanvasInner({
   // 关键点:RF 传进来的 edges 是基于"原始 nodes 列表"通过 getConnectedEdges 算出的连接边,
   // 我们后加的 output 节点的连接边不在里面 —— 必须手动从 store 全量边里捞出来追加,
   // 否则节点删了边还在, 变成悬空 edge.target 引用。
-  const handleBeforeDelete = useCallback(({ nodes, edges }) => {
-    if (!nodes || nodes.length === 0) return { nodes, edges }
+  const handleBeforeDelete = useCallback(({ nodes: inputNodes, edges }) => {
+    if (!inputNodes || inputNodes.length === 0) return { nodes: inputNodes, edges }
+
+    // 删 group 连带成员(spec §3.4/§9.3): 先用全量节点把 group 成员扩进待删集合
+    const allNodes = nodes   // component-level useStoreNodes()(全量)
+    const expandedIds = expandGroupDeletion(allNodes, new Set(inputNodes.map(n => n.id)), { isFoldedCapability, isOutputNodeType })
+    // 以扩展后的集合重建待删列表(后续折叠 output 补边逻辑沿用此列表)
+    const nodeById = new Map(allNodes.map(n => [n.id, n]))
+    const expandedNodes = [...expandedIds].map(id => nodeById.get(id)).filter(Boolean)
+
     const foldedMap = foldedMapRef.current
-    if (foldedMap.size === 0) return { nodes, edges }
+    if (foldedMap.size === 0) return { nodes: expandedNodes, edges }
 
     const foldedParentIds = new Set()
-    for (const n of nodes) {
+    for (const n of expandedNodes) {
       if (n.type === 'capability' && isFoldedCapability(n.data?.capability)) {
         foldedParentIds.add(n.id)
       }
     }
-    if (foldedParentIds.size === 0) return { nodes, edges }
+    if (foldedParentIds.size === 0) return { nodes: expandedNodes, edges }
 
-    const existingNodeIds = new Set(nodes.map(n => n.id))
+    const existingNodeIds = new Set(expandedNodes.map(n => n.id))
     const extraNodes = []
     const extraOutputIds = new Set()
     for (const [outputId, info] of foldedMap) {
@@ -1388,7 +1455,7 @@ function AiCanvasInner({
       extraNodes.push(n)
       extraOutputIds.add(outputId)
     }
-    if (extraNodes.length === 0) return { nodes, edges }
+    if (extraNodes.length === 0) return { nodes: expandedNodes, edges }
 
     // 补齐新加 output 节点的所有连接边 (入边 + 出边), 避免节点删了边悬空。
     // 注意 edge.deletable 默认为 true 时才能被删, 与 RF 内置过滤逻辑保持一致。
@@ -1402,8 +1469,8 @@ function AiCanvasInner({
       }
     }
 
-    return { nodes: [...nodes, ...extraNodes], edges: [...edges, ...extraEdges] }
-  }, [getNode, getEdges])
+    return { nodes: [...expandedNodes, ...extraNodes], edges: [...edges, ...extraEdges] }
+  }, [nodes, getNode, getEdges])
 
   // ReactFlow onMoveEnd 稳定引用 (内联 arrow 会让 StoreUpdater 跟踪的字段每渲染都
   // 视为变更, 触发不必要的 store.setState 与级联订阅唤醒, 见模块顶 DEFAULT_EDGE_OPTIONS 注释)
@@ -1436,6 +1503,7 @@ function AiCanvasInner({
     clipboard: { paste, copySelected, selectAll, deleteSelected },
     onOpenPanel: setSelectedNodeId,
     nodeZCounterRef,
+    groupActions: { createGroup, ungroup },
   })
 
   // ━━━ P4 工具栏操作 ━━━
@@ -1651,6 +1719,7 @@ function AiCanvasInner({
               onNodeClick={onNodeClick}
               onSelectionChange={onSelectionChange}
               onNodeDoubleClick={onNodeDoubleClick}
+              onNodeDrag={onNodeDrag}
               onNodeDragStop={onNodeDragStop}
               onMoveEnd={handleMoveEnd}
               onConnect={onConnect}
@@ -1698,6 +1767,9 @@ function AiCanvasInner({
                   竖线分隔, align="center" 浮在节点正上方居中.
                   见 docs/ui-standards/components-canvas.html#node-overlays */}
               <NodeToolbarPortal nodeZCounterRef={nodeZCounterRef} />
+
+              {/* 多选聚合工具条 — 选中 ≥2 节点时浮于包围盒上方，提供成组/复制/删除 */}
+              <MultiSelectToolbar onGroup={createGroup} onCopy={duplicateSelected} onDelete={deleteSelected} onDownload={downloadSelected} />
 
               {/* 把 zoom 写到 .react-flow 的 CSS 变量 --rf-zoom 上,
                   供端口标签 / 圆点 等"反向缩放"使用 */}

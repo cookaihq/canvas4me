@@ -230,27 +230,30 @@ export default function GptImage2DockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {/* 参考图行 */}
-      <DockedReferenceRow
-        items={referenceItems}
-        max={10}
-        showAddButton
-        onPickFiles={handlePickFiles}
-        onDelete={handleDeleteReference}
-        onInsertToken={handleInsertToken}
-      />
-
-      {/* prompt — 支持参考图 @图像N + 文本端口连入 chip 共存 */}
-      <div className={`gi2-dp-prompt-wrap${isModal ? ' modal' : ''}`}>
-        <RichPromptEditor
-          ref={promptEditorRef}
-          prompt={params.prompt || ''}
-          referenceImages={richReferenceImages}
-          onPromptChange={(text) => onParamsChange({ prompt: text })}
-          nodes={nodes}
-          onChipDelete={handlePromptChipDelete}
-          placeholder="描述想要生成的图像，可输入 @图像N 内联引用参考图..."
+      {/* 中间区：参考图行 + prompt 一起内部滚动（提示词过长时只滚这里，顶/底栏固定） */}
+      <div className="docked-panel-scroll">
+        {/* 参考图行 */}
+        <DockedReferenceRow
+          items={referenceItems}
+          max={10}
+          showAddButton
+          onPickFiles={handlePickFiles}
+          onDelete={handleDeleteReference}
+          onInsertToken={handleInsertToken}
         />
+
+        {/* prompt — 支持参考图 @图像N + 文本端口连入 chip 共存 */}
+        <div className={`gi2-dp-prompt-wrap${isModal ? ' modal' : ''}`}>
+          <RichPromptEditor
+            ref={promptEditorRef}
+            prompt={params.prompt || ''}
+            referenceImages={richReferenceImages}
+            onPromptChange={(text) => onParamsChange({ prompt: text })}
+            nodes={nodes}
+            onChipDelete={handlePromptChipDelete}
+            placeholder="描述想要生成的图像，可输入 @图像N 内联引用参考图..."
+          />
+        </div>
       </div>
 
       {/* 底栏 */}

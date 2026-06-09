@@ -1,16 +1,121 @@
-import { NODE_TYPES, CAPABILITIES, CAPABILITY_CARDS, resolveModeId, isFoldedCapability, getCapabilityPrimaryOutput } from '../registry/nodeTypes'
+import { NODE_TYPES, CAPABILITIES, CAPABILITY_CARDS, resolveModeId, isFoldedCapability, isOutputNodeType, getCapabilityPrimaryOutput } from '../registry/nodeTypes'
 import { resolveInitialParams } from './capabilityDefaults'
 import { resolveInputs } from '../registry/resolveInputs'
 import { isPreviewableFile } from './fileInfo'
 import { CAPABILITY_STACK_GAP, getInitialSize, pickSizePresetKey } from '../constants/spacing'
+import { normalizeRunStatus } from './designTokens'
+import { GROUP_DEFAULT_COLOR } from '../constants/group'
 
 export const PREVIEWABLE_FILE_HEIGHT = 450
 
 let counter = 0
 
-function genId(prefix) {
+export function genId(prefix) {
   counter++
   return `${prefix}-${Date.now()}-${counter}`
+}
+
+// 把一个节点和"某一次具体运行的后台任务"绑定在一起的字段。克隆/复制节点时必须全部斩断,
+// 否则副本会和原节点共享同一个任务 id —— 任务结果回来时,轮询登记表按任务 id 把结果
+// 群发给所有登记了这个 id 的节点(登记表是 taskId → Set<节点id>),副本就会被写进本不属于
+// 它的产物;且加载时的恢复扫描会把还带着 polling 状态 + 任务 id 的副本也当成"在跑的任务"
+// 重新登记,放大串号。任务慢(产物迟迟没回)时复制窗口被拉长,问题更易触发。
+const RUNTIME_TASK_FIELDS = [
+  'taskId', 'extraTaskId', 'realTaskId',
+  'taskBatchKey', 'slotIndex', 'isPrimary',
+  'startedAt', 'finishedAt',
+  'lastPollingItem', 'lastPolledAt',
+  'transferRetryCount',
+]
+
+/**
+ * 克隆节点 data 的"出厂重置":斩断任务身份,保证副本不会与原节点共享后台任务。
+ *
+ * - 始终删除 {@link RUNTIME_TASK_FIELDS}(任务 id / 计时 / 批次槽位等)
+ * - 在途态(运行/轮询/流式)没有真正产物 → runStatus 归零为 idle、清空空产物,
+ *   避免恢复扫描把副本当成"在跑的任务"重新登记
+ * - 已完成(done)/失败等终态 → 保留 runStatus 与 content,副本仍展示原产物(终态不会被恢复扫描登记)
+ *
+ * 入参不可变:返回新对象,不修改传入的 data。
+ */
+export function sanitizeClonedNodeData(data) {
+  if (!data || typeof data !== 'object') return data
+  const cleaned = { ...data }
+  for (const k of RUNTIME_TASK_FIELDS) delete cleaned[k]
+  const inFlight = ['Running', 'Polling', 'Streaming'].includes(normalizeRunStatus(cleaned.runStatus))
+  if (inFlight) {
+    cleaned.runStatus = 'idle'
+    cleaned.content = {}
+  }
+  return cleaned
+}
+
+/**
+ * 复制一个节点为独立副本。普通节点 → 单节点克隆;折叠能力节点 → 连它的常驻输出
+ * (承载图/视频/文本产物)+ internal 边一起克隆,副本才"带着产物",而不是空壳能力节点。
+ *
+ * - 新 id 一律走 {@link genId}(带递增计数器),不用裸 Date.now(),杜绝同毫秒撞 id
+ * - 节点 data 经 {@link sanitizeClonedNodeData} 斩断任务身份
+ * - 不复制外部连线(入边/下游消费边);折叠副本只带自己的 internal 边,是自包含单元
+ * - 输出节点的 sourceCapabilityId 重指向新能力节点 id,反查关系不串到原节点
+ *
+ * @param {object} srcNode 源节点(含 id / position / style / data)
+ * @param {{ allNodes?: Array, position?: {x:number,y:number} }} opts
+ *        allNodes 用于反查折叠能力节点的下游输出;position 为新能力节点落点(缺省沿用源位置)
+ * @returns {{ nodes: Array, edges: Array }}
+ */
+export function cloneNodeWithFoldedOutput(srcNode, { allNodes = [], position } = {}) {
+  const newCapId = genId(srcNode.type)
+  const newCap = {
+    ...srcNode,
+    id: newCapId,
+    position: position || srcNode.position,
+    selected: false,
+    data: sanitizeClonedNodeData({
+      ...JSON.parse(JSON.stringify(srcNode.data)),
+      locked: false,
+      portConnections: {},
+      canvasSeq: undefined,
+    }),
+  }
+
+  const isFolded = srcNode.type === 'capability' && isFoldedCapability(srcNode.data?.capability)
+  if (!isFolded) return { nodes: [newCap], edges: [] }
+
+  // 折叠能力节点的常驻输出:按 sourceCapabilityId 反查(老画布兜底 sourceAbilityId)
+  const origOutput = allNodes.find(n =>
+    isOutputNodeType(n.type) &&
+    (n.data?.sourceCapabilityId ?? n.data?.sourceAbilityId) === srcNode.id
+  )
+  if (!origOutput) return { nodes: [newCap], edges: [] }
+
+  const mode = resolveModeId(newCap.data.capability, newCap.data.mode)
+  const primaryOutput = getCapabilityPrimaryOutput(newCap.data.capability, mode)
+  const capWidth = typeof newCap.style?.width === 'number'
+    ? newCap.style.width
+    : parseFloat(newCap.style?.width) || 220
+  const newOutputId = genId('output')
+  const newOutput = {
+    ...origOutput,
+    id: newOutputId,
+    position: { x: newCap.position.x + capWidth + 200, y: newCap.position.y },
+    selected: false,
+    data: sanitizeClonedNodeData({
+      ...JSON.parse(JSON.stringify(origOutput.data)),
+      sourceCapabilityId: newCapId,
+      locked: false,
+      canvasSeq: undefined,
+    }),
+  }
+  const internalEdge = {
+    id: `edge-${newCapId}-${newOutputId}`,
+    source: newCapId,
+    sourceHandle: primaryOutput?.id,
+    target: newOutputId,
+    targetHandle: 'input',
+    type: 'custom',
+  }
+  return { nodes: [newCap, newOutput], edges: [internalEdge] }
 }
 
 /**
@@ -384,5 +489,23 @@ export function createNoteNode(position) {
       color: '#fffbe6',
     },
     style: { width: 200, height: 120 },
+  }
+}
+
+/**
+ * 创建分组节点。只造分组本身(几何+名字+颜色);成员关系由调用方设子节点 parentId(见 useGroupActions)。
+ * @param {{ x:number, y:number, width:number, height:number }} box 分组框(含 padding 的绝对几何)
+ */
+export function createGroupNode(box) {
+  return {
+    id: genId('group'),
+    type: 'group',
+    position: { x: box.x, y: box.y },
+    // 双写: 顶层 width/height 是 React Flow 12 渲染优先字段(与 NodeResizer 写的一致),
+    // style 同步保留(getNodeRect fallback / 持久化)。只写 style 会被手动 resize 写的顶层值盖住。
+    width: box.width,
+    height: box.height,
+    style: { width: box.width, height: box.height },
+    data: { name: '', color: GROUP_DEFAULT_COLOR },
   }
 }

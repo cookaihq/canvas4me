@@ -95,7 +95,7 @@ export default function ImageToVideoDockedPanel({
       />
 
       <div className="docked-panel-scroll">
-        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="docked-scroll-fill" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <SingleImageUploader
             value={params?.image_url || null}
             onChange={handleImageChange}

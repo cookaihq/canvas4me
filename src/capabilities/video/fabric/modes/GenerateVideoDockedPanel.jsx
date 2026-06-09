@@ -43,31 +43,33 @@ export default function GenerateVideoDockedPanel({
         onCapabilityChange={onCapabilityChange} onModeChange={onModeChange} onRequestVariant={onRequestVariant}
       />
 
-      <div className="ac-field-grid">
-        <MediaInputField
-          type="image" maxCount={1} label="人物图" required
-          value={imageField.value} uploadText="上传人物图"
-          onAdd={imageField.onAdd} onRemove={imageField.onRemove} onView={imageField.onView}
-        />
-        <MediaInputField
-          type="audio" maxCount={1} label="音频"
-          value={audioField.value} uploadText="上传音频"
-          onAdd={audioField.onAdd} onRemove={audioField.onRemove} onView={audioField.onView}
-        />
-      </div>
-      <input {...imageField.fileInputProps} />
-      <input {...audioField.fileInputProps} />
-      <MediaPreviewModal {...imageField.previewProps} />
-      <MediaPreviewModal {...audioField.previewProps} />
+      <div className="docked-panel-scroll">
+        <div className="ac-field-grid">
+          <MediaInputField
+            type="image" maxCount={1} label="人物图" required
+            value={imageField.value} uploadText="上传人物图"
+            onAdd={imageField.onAdd} onRemove={imageField.onRemove} onView={imageField.onView}
+          />
+          <MediaInputField
+            type="audio" maxCount={1} label="音频"
+            value={audioField.value} uploadText="上传音频"
+            onAdd={audioField.onAdd} onRemove={audioField.onRemove} onView={audioField.onView}
+          />
+        </div>
+        <input {...imageField.fileInputProps} />
+        <input {...audioField.fileInputProps} />
+        <MediaPreviewModal {...imageField.previewProps} />
+        <MediaPreviewModal {...audioField.previewProps} />
 
-      {resolutionSpec && (
-        <SegmentControl
-          label={resolutionSpec.label || '分辨率'}
-          value={params.resolution ?? resolutionSpec.defaultValue}
-          onChange={(v) => onParamsChange?.({ resolution: v })}
-          options={resolutionSpec.options.map((o) => ({ label: o.shortLabel || o.label, value: o.value }))}
-        />
-      )}
+        {resolutionSpec && (
+          <SegmentControl
+            label={resolutionSpec.label || '分辨率'}
+            value={params.resolution ?? resolutionSpec.defaultValue}
+            onChange={(v) => onParamsChange?.({ resolution: v })}
+            options={resolutionSpec.options.map((o) => ({ label: o.shortLabel || o.label, value: o.value }))}
+          />
+        )}
+      </div>
 
       <DockedBottomBar
         capability={capability} mode={mode} commonParams={bottomParams}

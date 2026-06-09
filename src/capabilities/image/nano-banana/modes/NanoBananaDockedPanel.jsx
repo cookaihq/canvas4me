@@ -190,25 +190,28 @@ export default function NanoBananaDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {/* 参考图行（在提示词上方） */}
-      <NanoBananaReferenceRow
-        items={referenceItems}
-        max={MAX_REF}
-        showAddButton
-        onPickFiles={handlePickFiles}
-        onDelete={handleDeleteReference}
-      />
-
-      {/* 提示词（TextInputWithEdges，canvas 级共享，支持文本端口连入 chip） */}
-      <div className={`nb-dp-prompt-wrap${isModal ? ' modal' : ''}`}>
-        <TextInputWithEdges
-          value={params.prompt || ''}
-          onChange={(val) => onParamsChange({ prompt: val })}
-          nodes={nodes}
-          onChipDelete={handlePromptChipDelete}
-          placeholder="描述想要生成的图像…"
-          variant={isModal ? 'modal' : 'inline'}
+      {/* 中间区：参考图行 + 提示词一起内部滚动（提示词过长时只滚这里，顶/底栏固定） */}
+      <div className="docked-panel-scroll">
+        {/* 参考图行（在提示词上方） */}
+        <NanoBananaReferenceRow
+          items={referenceItems}
+          max={MAX_REF}
+          showAddButton
+          onPickFiles={handlePickFiles}
+          onDelete={handleDeleteReference}
         />
+
+        {/* 提示词（TextInputWithEdges，canvas 级共享，支持文本端口连入 chip） */}
+        <div className={`nb-dp-prompt-wrap${isModal ? ' modal' : ''}`}>
+          <TextInputWithEdges
+            value={params.prompt || ''}
+            onChange={(val) => onParamsChange({ prompt: val })}
+            nodes={nodes}
+            onChipDelete={handlePromptChipDelete}
+            placeholder="描述想要生成的图像…"
+            variant={isModal ? 'modal' : 'inline'}
+          />
+        </div>
       </div>
 
       {/* 底栏：不传 extraOptions → model/aspect_ratio/resolution 全进单个 ParamChip */}

@@ -88,6 +88,7 @@
   justify-content: center;
   width: 36px;
   height: 36px;
+  padding: 0;
   background: var(--ac-bg-card);
   border: 1px solid var(--ac-border-default);
   border-radius: 50%;
@@ -95,12 +96,49 @@
   color: var(--ac-text-secondary);
   font-size: 16px;
   text-decoration: none;
+  cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .ai-canvas-topright-help:hover {
   background: var(--ac-border-subtle);
   color: var(--ac-text-primary);
+}
+
+.ai-canvas-help-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 28px; /* 给 antd 默认关闭 X 留位 */
+}
+
+.ai-canvas-help-modal-external {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--ac-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ai-canvas-help-modal-external:hover {
+  background: var(--ac-border-subtle);
+  color: var(--ac-text-primary);
+}
+
+.ai-canvas-help-modal-iframe {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ac-bg-page);
 }
 
 .ai-canvas-topright-cluster {
@@ -4964,7 +5002,11 @@
   box-shadow: 0 16px 48px rgba(15, 23, 42, 0.24);
   width: min(820px, 92vw);
   max-height: 86vh;
-  overflow: auto;
+  /* 整体不滚 —— 滚动交给内部 body 的三段式中间区(.docked-panel-scroll),
+     未三段化的面板 body 自身仍 overflow:auto 内部滚 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ─── 运行倍数控件 (×1 / ×2 / ×4) ─── */
@@ -5354,18 +5396,50 @@
 
 /* 三段式 DockedPanel — 顶栏 / 底栏固定, 仅中间内容区滚动。
    面板内出现 .docked-panel-scroll 包裹层时启用: body 自身不滚 (overflow:hidden),
-   把滚动交给中间那层; 未包裹 .docked-panel-scroll 的面板仍走 body 整体滚动。 */
-.sd2-dp.docked-panel-body {
+   把滚动交给中间那层; 未包裹 .docked-panel-scroll 的面板仍走 body 整体滚动。
+   效果: 提示词过长时在中间区内部滚动, 顶栏与底部工具栏始终固定贴在卡片边缘。 */
+.docked-panel-body:has(> .docked-panel-scroll) {
   overflow: hidden;
 }
-.sd2-dp.docked-panel-body > * {
+.docked-panel-body:has(> .docked-panel-scroll) > * {
   flex: 0 0 auto;
 }
-.sd2-dp.docked-panel-body > .docked-panel-scroll {
+.docked-panel-body > .docked-panel-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  /* 继承 body 的 flex gap, 让被包裹的中间元素保持原有间距 */
+  gap: inherit;
+}
+
+/* 提示词输入框填满中间区并「自身内部滚动」(滚动条落在输入框内, 参考图/标题/工具栏固定)。
+   覆盖共用 TextInputWithEdges(.tp-editor) 的各能力提示词包装;
+   gpt-image-2 的 RichPromptEditor 走各自的 .gi2-prompt-* 规则。 */
+.docked-panel-scroll > .nb-dp-prompt-wrap,
+.docked-panel-scroll > .llm-dp-prompt-wrap,
+.docked-panel-scroll > .ms-dp-prompt-wrap,
+.docked-panel-scroll > .lyria3-prompt-wrap,
+.docked-panel-scroll > .mm-prompt-wrap,
+.docked-panel-scroll > .mm-lyrics-wrap,
+.docked-panel-scroll > .docked-scroll-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.docked-panel-scroll > .nb-dp-prompt-wrap > .tp-editor,
+.docked-panel-scroll > .llm-dp-prompt-wrap > .tp-editor,
+.docked-panel-scroll > .ms-dp-prompt-wrap > .tp-editor,
+.docked-panel-scroll > .lyria3-prompt-wrap > .tp-editor,
+.docked-panel-scroll > .mm-prompt-wrap > .tp-editor,
+.docked-panel-scroll > .mm-lyrics-wrap > .tp-editor,
+.docked-panel-scroll > .docked-scroll-fill > .tp-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .docked-panel-section-label {
@@ -5669,9 +5743,13 @@
 }
 
 /* 参考图行 + mask 立柱 */
-/* prompt 包装 */
+/* prompt 包装 —— 占满中间滚动区剩余空间, 让内部输入框自身滚动(参考图行/标题固定) */
 .gi2-dp-prompt-wrap {
   border-radius: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .gi2-dp-prompt-wrap.modal {
@@ -8333,6 +8411,17 @@
   color: var(--ac-text-primary);
 }
 
+/* 置灰: 无可下载产物时批量下载按钮 disabled(spec §7.4) */
+.node-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.node-toolbar-btn:disabled:hover {
+  background: none;
+  color: inherit;
+}
+
 /* danger 按钮 (删除) icon 色用 --ac-error */
 .node-toolbar-btn-danger {
   color: var(--ac-error);
@@ -8800,3 +8889,15 @@
   font-size: var(--ac-font-xs);
   color: var(--ac-text-muted);
 }
+
+.group-node {
+  width: 100%;
+  height: 100%;
+  border: 1.5px solid;
+  border-radius: 10px;
+  cursor: grab; /* spec §3.5: 空白区抓手, 拖整组 */
+  box-sizing: border-box;
+}
+.group-node:active { cursor: grabbing; }
+.group-node.selected { box-shadow: 0 0 0 1px var(--ac-color-primary, #4a7dff) inset; }
+.group-node.drop-target { box-shadow: 0 0 0 2px var(--ac-color-primary, #4a7dff); }

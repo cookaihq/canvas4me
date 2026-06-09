@@ -105,7 +105,7 @@ export default function MotionControlDockedPanel({
       />
 
       <div className="docked-panel-scroll">
-        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="docked-scroll-fill" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <FieldGrid>
             <MediaInputField
               type="image"

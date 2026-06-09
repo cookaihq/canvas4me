@@ -52,33 +52,35 @@ export default function SyncVideoDockedPanel({
         onCapabilityChange={onCapabilityChange} onModeChange={onModeChange} onRequestVariant={onRequestVariant}
       />
 
-      <div className="ac-field-grid">
-        <MediaInputField
-          type="video" maxCount={1} label="源视频" required
-          value={videoField.value} uploadText="上传视频"
-          onAdd={videoField.onAdd} onRemove={videoField.onRemove} onView={videoField.onView}
-        />
-        <MediaInputField
-          type="audio" maxCount={1} label="音频" required
-          value={audioField.value} uploadText="上传音频"
-          onAdd={audioField.onAdd} onRemove={audioField.onRemove} onView={audioField.onView}
-        />
-      </div>
-      <input {...videoField.fileInputProps} />
-      <input {...audioField.fileInputProps} />
-      <MediaPreviewModal {...videoField.previewProps} />
-      <MediaPreviewModal {...audioField.previewProps} />
+      <div className="docked-panel-scroll">
+        <div className="ac-field-grid">
+          <MediaInputField
+            type="video" maxCount={1} label="源视频" required
+            value={videoField.value} uploadText="上传视频"
+            onAdd={videoField.onAdd} onRemove={videoField.onRemove} onView={videoField.onView}
+          />
+          <MediaInputField
+            type="audio" maxCount={1} label="音频" required
+            value={audioField.value} uploadText="上传音频"
+            onAdd={audioField.onAdd} onRemove={audioField.onRemove} onView={audioField.onView}
+          />
+        </div>
+        <input {...videoField.fileInputProps} />
+        <input {...audioField.fileInputProps} />
+        <MediaPreviewModal {...videoField.previewProps} />
+        <MediaPreviewModal {...audioField.previewProps} />
 
-      {syncModeSpec && (
-        <SegmentControl
-          fill
-          label={syncModeSpec.label || '同步模式'}
-          value={currentSyncMode}
-          onChange={(v) => onParamsChange?.({ sync_mode: v })}
-          options={syncModeSpec.options.map((o) => ({ label: o.shortLabel || o.label, value: o.value }))}
-          help={SYNC_MODE_HELP[currentSyncMode] || ''}
-        />
-      )}
+        {syncModeSpec && (
+          <SegmentControl
+            fill
+            label={syncModeSpec.label || '同步模式'}
+            value={currentSyncMode}
+            onChange={(v) => onParamsChange?.({ sync_mode: v })}
+            options={syncModeSpec.options.map((o) => ({ label: o.shortLabel || o.label, value: o.value }))}
+            help={SYNC_MODE_HELP[currentSyncMode] || ''}
+          />
+        )}
+      </div>
 
       <DockedBottomBar
         capability={capability} mode={mode} commonParams={bottomParams}

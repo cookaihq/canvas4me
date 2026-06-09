@@ -23,12 +23,15 @@ import useBrowseMode from '../hooks/useBrowseMode'
 import useDebugMode from '../hooks/useDebugMode'
 import useContentUpload from '../hooks/useContentUpload'
 import { CAPABILITY_STACK_GAP } from '../constants/spacing'
+import { GROUP_COLOR_PRESETS } from '../constants/group'
+import { cloneNodeWithFoldedOutput } from '../utils/nodeFactory'
+import GroupActionsToolbar from './GroupActionsToolbar'
 import NodeDataModal from './debug/NodeDataModal'
 import MediaPreviewToolbar from './nodes/MediaPreviewToolbar'
 import { resolveMediaContext } from './nodes/resolveMediaContext'
 import { resolveCopyableText } from './nodes/resolveTextContext'
 
-const NOTE_COLOR_PRESETS = ['#fffbe6', '#f6ffed', '#e6f7ff', '#fff0f6', '#f9f0ff', '#fff7e6']
+const NOTE_COLOR_PRESETS = GROUP_COLOR_PRESETS
 const DEFAULT_NOTE_COLOR = '#fffbe6'
 
 // 媒体输入节点的"上传/替换"配置: 文件选择器 accept + 文案名词
@@ -155,10 +158,11 @@ function NodeToolbarRow({
   // 装饰层按 type/mediaContext 决定显隐. mediaCtx 复用 media 段的解析结果, 避免重复计算.
   const decoratorExtra = renderExtras ? renderExtras(node, { mediaContext: mediaCtx }) : null
 
-  // ─── actions 段: NoteNode 颜色选择器 ───
+  // ─── actions 段: NoteNode / GroupNode 颜色选择器 ───
   const isNote = node.type === 'note'
-  const noteColor = isNote ? (node.data?.color || DEFAULT_NOTE_COLOR) : null
-  const colorPaletteOpen = isNote && colorPickerOpenId === nodeId
+  const isGroup = node.type === 'group'
+  const colorTarget = (isNote || isGroup) ? (node.data?.color || DEFAULT_NOTE_COLOR) : null
+  const colorPaletteOpen = (isNote || isGroup) && colorPickerOpenId === nodeId
 
   const handleToggleColorPicker = useCallback((e) => {
     e.stopPropagation()
@@ -196,25 +200,16 @@ function NodeToolbarRow({
     // 后者已为新节点上方 NodeMeta + 选中工具栏的总撑出预留位置 (见 constants/spacing.js).
     const rawH = src.measured?.height ?? src.height ?? src.style?.height
     const sourceH = typeof rawH === 'number' ? rawH : parseFloat(rawH) || 200
-    const newNode = {
-      ...src,
-      id: `${src.type}-${Date.now()}`,
-      position: {
-        x: src.position.x,
-        y: src.position.y + sourceH + CAPABILITY_STACK_GAP,
-      },
-      selected: false,
-      // 本路径不复制 edges, portConnections 必须清空, 否则切 mode 时会被 reconcileOnModeChange
-      // 当历史记录重建成幽灵边. canvasSeq 由渲染层 computeNodeSeqMap 派生, 此处不写.
-      data: {
-        ...JSON.parse(JSON.stringify(src.data)),
-        locked: false,
-        portConnections: {},
-        canvasSeq: undefined,
-      },
-    }
-    facade.addNodes([{ ...newNode, zIndex: nodeZCounterRef.current++ }])
-  }, [nodeId, getNode, facade, nodeZCounterRef])
+    const position = { x: src.position.x, y: src.position.y + sourceH + CAPABILITY_STACK_GAP }
+    // cloneNodeWithFoldedOutput: 普通节点单克隆; 折叠能力节点连下游产物输出 + internal 边一起克隆
+    // (副本带着视频/图, 不是空壳); 内部已走 genId(防撞号) + sanitizeClonedNodeData(斩断任务身份).
+    const { nodes: clonedNodes, edges: clonedEdges } = cloneNodeWithFoldedOutput(src, {
+      allNodes: getNodes(),
+      position,
+    })
+    facade.addNodes(clonedNodes.map(n => ({ ...n, zIndex: nodeZCounterRef.current++ })))
+    if (clonedEdges.length) facade.addEdges(clonedEdges)
+  }, [nodeId, getNode, getNodes, facade, nodeZCounterRef])
 
   const handleDelete = useCallback((e) => {
     e.stopPropagation()
@@ -283,18 +278,18 @@ function NodeToolbarRow({
               />
             </>
           )}
-          {isNote && (
+          {(isNote || isGroup) && (
             <div className="note-color-picker-wrapper">
-              <Tooltip title="备注颜色">
+              <Tooltip title="颜色">
                 <button
                   type="button"
                   className="node-toolbar-btn"
-                  aria-label="备注颜色"
+                  aria-label="颜色"
                   onClick={handleToggleColorPicker}
                 >
                   <span
                     className="note-color-dot"
-                    style={{ backgroundColor: noteColor }}
+                    style={{ backgroundColor: colorTarget }}
                   />
                 </button>
               </Tooltip>
@@ -304,7 +299,7 @@ function NodeToolbarRow({
                     <button
                       key={c}
                       type="button"
-                      className={`note-color-swatch ${c === noteColor ? 'active' : ''}`}
+                      className={`note-color-swatch ${c === colorTarget ? 'active' : ''}`}
                       style={{ backgroundColor: c }}
                       onClick={handleColorPick(c)}
                       aria-label={`选择颜色 ${c}`}
@@ -314,6 +309,7 @@ function NodeToolbarRow({
               )}
             </div>
           )}
+          {isGroup && <GroupActionsToolbar />}
           {copyableText && (
             <Tooltip title="复制文本">
               <button
@@ -326,16 +322,18 @@ function NodeToolbarRow({
               </button>
             </Tooltip>
           )}
-          <Tooltip title="复制">
-            <button
-              type="button"
-              className="node-toolbar-btn"
-              aria-label="复制"
-              onClick={handleCopy}
-            >
-              <Copy size={14} />
-            </button>
-          </Tooltip>
+          {!isGroup && (
+            <Tooltip title="复制">
+              <button
+                type="button"
+                className="node-toolbar-btn"
+                aria-label="复制"
+                onClick={handleCopy}
+              >
+                <Copy size={14} />
+              </button>
+            </Tooltip>
+          )}
           <Tooltip title="删除">
             <button
               type="button"

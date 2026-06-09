@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { message } from 'antd'
 import { isOutputNodeType, isFoldedCapability } from '../registry/nodeTypes'
+import { expandGroupDeletion } from '../utils/groupGrouping'
+import { expandCopyWithGroupMembers, remapParentIds } from '../utils/groupClipboard'
 import { removeConnection } from '../utils/capabilityNodeData'
+import { sanitizeClonedNodeData, genId } from '../utils/nodeFactory'
 import { useCanvasFacade } from '../state/canvasFacade'
 
 /**
@@ -16,9 +19,11 @@ import { useCanvasFacade } from '../state/canvasFacade'
  *   getViewport: Function,
  *   onImagePaste?: (file: File) => void,
  *   nodeZCounterRef: { current: number },   // 画布 z-index 单调计数器(bring-to-front)
+ *   onGroup?: () => void,
+ *   onUngroup?: () => void,
  * }} opts
  */
-export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isEditing, getViewport, onImagePaste, nodeZCounterRef }) {
+export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isEditing, getViewport, onImagePaste, nodeZCounterRef, onGroup, onUngroup }) {
   const facade = useCanvasFacade()
   const clipboardRef = useRef({ nodes: [], edges: [] })
 
@@ -27,14 +32,38 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
     const selectedNodes = nodes.filter(n => n.selected)
     if (selectedNodes.length === 0) return
 
-    const selectedIds = new Set(selectedNodes.map(n => n.id))
-    // 找出连接选中节点之间的边
+    // 折叠能力节点连它的常驻产物输出一起复制 —— 否则粘贴端只有空壳能力节点（拿不到产物）。
+    // 一并纳入 internal 边(由下方 relatedEdges 按扩展后的 id 集合自动收进)。
+    const copyNodes = [...selectedNodes]
+    const copyIds = new Set(copyNodes.map(n => n.id))
+    for (const n of selectedNodes) {
+      if (n.type !== 'capability' || !isFoldedCapability(n.data?.capability)) continue
+      const out = nodes.find(o =>
+        isOutputNodeType(o.type) &&
+        (o.data?.sourceCapabilityId ?? o.data?.sourceAbilityId) === n.id
+      )
+      if (out && !copyIds.has(out.id)) {
+        copyNodes.push(out)
+        copyIds.add(out.id)
+      }
+    }
+
+    // group 成员连带: 选中 group 时, 把其成员一并纳入复制集合
+    const expandedCopyIds = expandCopyWithGroupMembers(nodes, copyIds)
+    for (const n of nodes) {
+      if (expandedCopyIds.has(n.id) && !copyIds.has(n.id)) {
+        copyNodes.push(n)
+        copyIds.add(n.id)
+      }
+    }
+
+    // 找出连接(扩展后)节点之间的边 —— 含折叠对的 internal 边
     const relatedEdges = edges.filter(
-      e => selectedIds.has(e.source) && selectedIds.has(e.target)
+      e => copyIds.has(e.source) && copyIds.has(e.target)
     )
 
     clipboardRef.current = {
-      nodes: selectedNodes.map(n => ({ ...n, data: JSON.parse(JSON.stringify(n.data)), position: { ...n.position } })),
+      nodes: copyNodes.map(n => ({ ...n, data: JSON.parse(JSON.stringify(n.data)), position: { ...n.position } })),
       edges: relatedEdges.map(e => ({ ...e })),
     }
   }, [nodes, edges])
@@ -44,38 +73,45 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
     const { nodes: clipNodes, edges: clipEdges } = clipboardRef.current
     if (clipNodes.length === 0) return
 
+    // 先建全量 idMap(旧 id → 新 id),再克隆 —— 这样折叠输出节点能把 sourceCapabilityId
+    // 重指向同批粘贴的新能力节点。genId 带递增计数器,避免同毫秒多次粘贴撞 id(撞 id 会污染
+    // React Flow nodeLookup)。
     const idMap = {}
-    const now = Date.now()
+    for (const n of clipNodes) idMap[n.id] = genId(n.id.split('-')[0])
 
-    const newNodes = clipNodes.map((n, i) => {
-      const newId = `${n.id.split('-')[0]}-paste-${now}-${i}`
-      idMap[n.id] = newId
+    const newNodes = clipNodes.map((n) => {
+      // portConnections 必须清空：否则继承的连线历史会在切 mode 时被 reconcileOnModeChange 重建成幽灵边
+      // canvasSeq 不沿用源节点，setNodes 内重新分配
+      const baseData = { ...JSON.parse(JSON.stringify(n.data)), locked: false, portConnections: {}, canvasSeq: undefined }
+      // 折叠输出节点的 sourceCapabilityId 若指向同批粘贴的能力节点,跟着 idMap 重指向新副本,
+      // 否则副本输出仍反查到原能力节点,关系串号。
+      if (baseData.sourceCapabilityId && idMap[baseData.sourceCapabilityId]) {
+        baseData.sourceCapabilityId = idMap[baseData.sourceCapabilityId]
+      }
       return {
         ...n,
-        id: newId,
-        position: { x: n.position.x + 20, y: n.position.y + 20 },
+        id: idMap[n.id],
+        // 偏移仅施加于顶层节点: group 成员的 position 是相对父的, 加偏移会让成员在新组内额外位移;
+        // 成员保持相对位置不变, 整组随父平移即可(group 自身 +20).
+        position: n.parentId
+          ? { ...n.position }
+          : { x: n.position.x + 20, y: n.position.y + 20 },
         selected: true,
-        // portConnections 必须清空：否则继承的连线历史会在切 mode 时被 reconcileOnModeChange 重建成幽灵边
-        // canvasSeq 不沿用源节点，setNodes 内重新分配
+        // sanitizeClonedNodeData 斩断任务身份，防止副本与原节点共享后台任务导致产物串号
         data: n.type === 'capability'
-          ? {
-            ...JSON.parse(JSON.stringify(n.data)),
-            locked: false,
-            portConnections: {},
-            canvasSeq: undefined,
-            runStatus: 'idle',
-            lastRunSnapshot: null,
-            userTouched: {},
-          }
-          : { ...JSON.parse(JSON.stringify(n.data)), locked: false, portConnections: {}, canvasSeq: undefined },
+          ? sanitizeClonedNodeData({ ...baseData, runStatus: 'idle', lastRunSnapshot: null, userTouched: {} })
+          : sanitizeClonedNodeData(baseData),
       }
     })
 
+    // group 成员 parentId 重映射: 旧 groupId → 新 groupId; 父未一起复制则清 parentId 变独立
+    const remappedNodes = remapParentIds(newNodes, idMap)
+
     const newEdges = clipEdges
       .filter(e => idMap[e.source] && idMap[e.target])
-      .map((e, i) => ({
+      .map((e) => ({
         ...e,
-        id: `edge-paste-${now}-${i}`,
+        id: genId('edge-paste'),
         source: idMap[e.source],
         target: idMap[e.target],
         selected: true,
@@ -86,9 +122,18 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
     // bring-to-front: 给每个粘贴节点写一个比当前所有节点高的 zIndex
     facade.batchUpdateNodes(prev => prev.map(n => (n.selected ? { ...n, selected: false } : n)))
     facade.batchUpdateEdges(prev => prev.map(e => (e.selected ? { ...e, selected: false } : e)))
-    facade.addNodes(newNodes.map(n => ({ ...n, zIndex: nodeZCounterRef.current++ })))
+    facade.addNodes(remappedNodes.map(n => ({ ...n, zIndex: nodeZCounterRef.current++ })))
     facade.addEdges(newEdges)
   }, [facade, nodeZCounterRef])
+
+  // 就地复制选中(多选工具条"复制"用): 即时副本 = copySelected + paste。clipboardRef 是同步 ref,
+  // save/restore 避免污染用户 ⌘C 剪贴板内容。
+  const duplicateSelected = useCallback(() => {
+    const saved = clipboardRef.current
+    copySelected()
+    paste()
+    clipboardRef.current = saved
+  }, [copySelected, paste])
 
   // 删除选中节点和连线
   // 能力节点 → 输出节点 的连线受保护，不能单独删除；只有在输出节点本身被删除时跟随清理。
@@ -102,6 +147,10 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
     const hasSelectedEdges = edges.some(e => e.selected)
 
     if (selectedNodeIds.size === 0 && !hasSelectedEdges) return
+
+    // 删 group 连带成员(与 onBeforeDelete 轨一致, spec §9.3)
+    const expandedIds = expandGroupDeletion(nodes, selectedNodeIds, { isFoldedCapability, isOutputNodeType })
+    for (const id of expandedIds) selectedNodeIds.add(id)
 
     // 折叠形态删除联动: 选中的能力节点若是 folded, 把它下游 outputNode 加入待删集合
     for (const id of Array.from(selectedNodeIds)) {
@@ -198,12 +247,16 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
       } else if (mod && e.key === 'a') {
         e.preventDefault()
         selectAll()
+      } else if (mod && e.key === 'g') {
+        e.preventDefault()
+        if (e.shiftKey) onUngroup?.()   // ⌘⇧G 解组
+        else onGroup?.()                // ⌘G 成组
       }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [copySelected, deleteSelected, selectAll, isEditing])
+  }, [copySelected, deleteSelected, selectAll, isEditing, onGroup, onUngroup])
 
   // 粘贴事件：优先读系统剪贴板里的图片，没有则走节点粘贴
   useEffect(() => {
@@ -238,5 +291,5 @@ export default function useCanvasActions({ nodes, edges, setNodes, setEdges, isE
     return () => window.removeEventListener('paste', handler)
   }, [isEditing, paste, onImagePaste])
 
-  return { copySelected, paste, deleteSelected, selectAll }
+  return { copySelected, paste, duplicateSelected, deleteSelected, selectAll }
 }

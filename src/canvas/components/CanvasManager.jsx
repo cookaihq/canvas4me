@@ -342,6 +342,7 @@ export default function CanvasManager({
                       <span style={{ fontSize: 11, color: '#8c8c8c' }}>
                         {canvas.node_count != null && `${canvas.node_count} 个节点 · `}
                         {formatTime(canvas.created_at)}
+                        {!mineOnly && canvas.user_info?.user_name && ` · ${canvas.user_info.user_name}`}
                       </span>
                     }
                   />

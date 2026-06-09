@@ -225,30 +225,32 @@ export default function ImageAudioToVideoDockedPanel({
         onCapabilityChange={onCapabilityChange} onModeChange={onModeChange} onRequestVariant={onRequestVariant}
       />
 
-      <FieldGrid>
-        <MediaInputField
-          type="image" label="人物图" required maxCount={1} uploadText="上传人物图"
-          value={imageValue} onAdd={handlePickImage} onRemove={handleRemoveImage}
-          onView={imageUrl ? handleViewImage : undefined}
-        />
-        <MediaInputField
-          type="audio" label="驱动音频" required maxCount={1} uploadText="上传音频" badge="最长 60 秒"
-          value={audioValue} onAdd={handlePickAudio} onRemove={handleRemoveAudio}
-          onView={audioUrl ? handleViewAudio : undefined}
-        />
-      </FieldGrid>
+      <div className="docked-panel-scroll">
+        <FieldGrid>
+          <MediaInputField
+            type="image" label="人物图" required maxCount={1} uploadText="上传人物图"
+            value={imageValue} onAdd={handlePickImage} onRemove={handleRemoveImage}
+            onView={imageUrl ? handleViewImage : undefined}
+          />
+          <MediaInputField
+            type="audio" label="驱动音频" required maxCount={1} uploadText="上传音频" badge="最长 60 秒"
+            value={audioValue} onAdd={handlePickAudio} onRemove={handleRemoveAudio}
+            onView={audioUrl ? handleViewAudio : undefined}
+          />
+        </FieldGrid>
 
-      <SegmentControl
-        label="分辨率" options={RESOLUTION_OPTIONS} value={resolution}
-        onChange={v => onParamsChange?.({ resolution: v })}
-      />
+        <SegmentControl
+          label="分辨率" options={RESOLUTION_OPTIONS} value={resolution}
+          onChange={v => onParamsChange?.({ resolution: v })}
+        />
 
-      <PromptTextarea
-        label="风格引导词" value={params.prompt ?? ''} maxLength={PROMPT_MAX}
-        placeholder="棚拍光线，专业广告口播，稳定看镜头，表情自然，清晰半身构图。"
-        help="可选；不填时使用模型默认风格。"
-        onChange={v => onParamsChange?.({ prompt: v })}
-      />
+        <PromptTextarea
+          label="风格引导词" value={params.prompt ?? ''} maxLength={PROMPT_MAX}
+          placeholder="棚拍光线，专业广告口播，稳定看镜头，表情自然，清晰半身构图。"
+          help="可选；不填时使用模型默认风格。"
+          onChange={v => onParamsChange?.({ prompt: v })}
+        />
+      </div>
 
       <DockedBottomBar
         capability={capability} mode={mode} commonParams={[]}

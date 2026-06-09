@@ -12,7 +12,7 @@ import { resolveInputs } from '../registry/resolveInputs'
 import { isPortOccupiedByPanel } from '../utils/portMutex'
 import { buildRequestBody } from '../runtime/buildRequestBody'
 import { extractUrlsFromBody, replaceUrlsInBody } from '../runtime/urlFieldHelpers'
-import { probeUrlsBatch, LOAD_ERROR_REASONS, REASON_MESSAGES } from '../utils/urlCheck'
+import { probeUrlsBatch, isHealableProbeResult, LOAD_ERROR_REASONS, REASON_MESSAGES } from '../utils/urlCheck'
 import { selfHealUrlsBatch, CacheMissError } from '../utils/urlSelfHeal'
 import { useTaskClient, useUploader } from '@/platform/provider.jsx'
 import { registerPendingRequest, unregisterPendingRequest } from '@/utils/tabSession'
@@ -842,8 +842,8 @@ async function submitWithRetry({
 
     // ── URL 探测 + 自愈 ──
     // 把节点先标 validating, 让 UI 显示"校验中"状态(色同 polling).
-    // 探测 body 里 urlFields 声明的所有 URL → 失效的从浏览器缓存重传拿新 url →
-    // 替换 body + 同步节点 data.content.url. 任一失效 URL 既无缓存也无法上传 → 整体抛错.
+    // 探测 body 里 urlFields 声明的所有 URL → 确实失效(404/403)的从浏览器缓存重传拿新 url →
+    // 替换 body + 同步节点 data.content.url. 此类 URL 既无缓存也无法上传 → 整体抛错.
     batchUpdateNodes(nds => nds.map(n =>
       allNodeIdsSet.has(n.id) ? { ...n, data: { ...n.data, runStatus: 'validating' } } : n
     ))
@@ -965,11 +965,13 @@ function isConflictError(err) {
  *   1. 抽出 body 里 urlFields 声明的所有 URL
  *   2. 过滤掉 externalUrls (来自带 content.external 标记节点的 URL,如 YouTube)
  *   3. probeUrlsBatch HEAD 探测 (并行,2s 超时)
- *   4. 失效的走 selfHealUrlsBatch:从浏览器 Cache 取 blob → uploader.uploadFile 拿新 URL
+ *   4. 仅"确实失效"(404/403,isHealableProbeResult)的走 selfHealUrlsBatch:
+ *      从浏览器 Cache 取 blob → uploader.uploadFile 拿新 URL
+ *      (跨域被拦/超时/瞬时 5xx 等判不准的结果一律放行,交由后端服务端取用)
  *   5. urlMap (oldUrl → newUrl) 替换 body 中所有引用 + 同步节点 data.content.url / urls
- *   6. 任一失效 URL 既无缓存也无法上传 → 整体抛错(让上层走 catch 给节点标 error)
+ *   6. 任一确实失效的 URL 既无缓存也无法上传 → 整体抛错(让上层走 catch 给节点标 error)
  *
- * 不抛错的情况:全部 URL 探测 ok / 部分失效但全部自愈成功 / urlFields 为空 / 全部是 external
+ * 不抛错的情况:无 URL 被判失效 / 失效的全部自愈成功 / urlFields 为空 / 全部是 external
  */
 async function healUrlsInBody(body, urlFields, uploader, batchUpdateNodes, allNodeIdsSet, externalUrls) {
   const allUrls = extractUrlsFromBody(body, urlFields)
@@ -979,9 +981,11 @@ async function healUrlsInBody(body, urlFields, uploader, batchUpdateNodes, allNo
   if (urls.length === 0) return
 
   const probeResults = await probeUrlsBatch(urls, { timeout: 2500, concurrency: 4 })
+  // 只对"确实失效"(404 / 403)的 URL 自愈。跨域被拦 / 超时 / 瞬时 5xx 等前端判不准的
+  // 结果一律放行——这些 URL 由后端服务端取用,不受浏览器跨域限制,误判会错误地挡掉提交。
   const deadUrls = []
   for (const r of probeResults) {
-    if (!r.ok) deadUrls.push(r.url)
+    if (isHealableProbeResult(r)) deadUrls.push(r.url)
   }
   if (deadUrls.length === 0) return
 

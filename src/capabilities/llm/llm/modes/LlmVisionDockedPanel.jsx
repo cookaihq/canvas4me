@@ -98,22 +98,24 @@ export default function LlmVisionDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      <LlmAttachmentRow
-        kind="image"
-        items={imageItems}
-        max={MAX_IMAGES}
-        onPickFiles={handlePickFiles}
-        onDelete={handleDelete}
-      />
+      <div className="docked-panel-scroll">
+        <LlmAttachmentRow
+          kind="image"
+          items={imageItems}
+          max={MAX_IMAGES}
+          onPickFiles={handlePickFiles}
+          onDelete={handleDelete}
+        />
 
-      <LlmPromptInput
-        variant={variant}
-        edges={edges}
-        nodeId={node.id}
-        value={params.prompt}
-        onChange={(text) => onParamsChange({ prompt: text })}
-        placeholder="描述你想从图片里理解什么..."
-      />
+        <LlmPromptInput
+          variant={variant}
+          edges={edges}
+          nodeId={node.id}
+          value={params.prompt}
+          onChange={(text) => onParamsChange({ prompt: text })}
+          placeholder="描述你想从图片里理解什么..."
+        />
+      </div>
 
       <DockedBottomBar
         capability={capability}

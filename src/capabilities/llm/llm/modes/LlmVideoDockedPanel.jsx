@@ -149,57 +149,59 @@ export default function LlmVideoDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {(videoItems.length > 0 || videoLinks.length === 0) && (
-        <LlmAttachmentRow
-          kind="video"
-          items={videoItems}
-          max={MAX_VIDEOS}
-          onPickFiles={handlePickFiles}
-          onDelete={handleDelete}
-          onPasteLink={isGemini ? openLinkModal : undefined}
-          showAddButton={videoLinks.length === 0}
+      <div className="docked-panel-scroll">
+        {(videoItems.length > 0 || videoLinks.length === 0) && (
+          <LlmAttachmentRow
+            kind="video"
+            items={videoItems}
+            max={MAX_VIDEOS}
+            onPickFiles={handlePickFiles}
+            onDelete={handleDelete}
+            onPasteLink={isGemini ? openLinkModal : undefined}
+            showAddButton={videoLinks.length === 0}
+          />
+        )}
+
+        {videoLinks.length > 0 && (
+          <div className="llm-video-link-list">
+            {videoLinks.map(url => (
+              <div key={url} className="llm-video-link-chip" title={url}>
+                <Link className="llm-video-link-chip-icon" size={12} />
+                <span className="llm-video-link-chip-url">{url}</span>
+                <Tooltip title="删除">
+                  <button
+                    type="button"
+                    className="llm-video-link-chip-del"
+                    onClick={() => removeVideoLink(url)}
+                    aria-label="删除链接"
+                  >
+                    <X size={12} />
+                  </button>
+                </Tooltip>
+              </div>
+            ))}
+            {isGemini && totalAttachments < MAX_VIDEOS && (
+              <button
+                type="button"
+                className="llm-video-link-add"
+                onClick={openLinkModal}
+              >
+                <Plus size={14} />
+                <span>再添加一个 YouTube 链接</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        <LlmPromptInput
+          variant={variant}
+          edges={edges}
+          nodeId={node.id}
+          value={params.prompt}
+          onChange={(text) => onParamsChange({ prompt: text })}
+          placeholder="描述你想从视频里理解什么..."
         />
-      )}
-
-      {videoLinks.length > 0 && (
-        <div className="llm-video-link-list">
-          {videoLinks.map(url => (
-            <div key={url} className="llm-video-link-chip" title={url}>
-              <Link className="llm-video-link-chip-icon" size={12} />
-              <span className="llm-video-link-chip-url">{url}</span>
-              <Tooltip title="删除">
-                <button
-                  type="button"
-                  className="llm-video-link-chip-del"
-                  onClick={() => removeVideoLink(url)}
-                  aria-label="删除链接"
-                >
-                  <X size={12} />
-                </button>
-              </Tooltip>
-            </div>
-          ))}
-          {isGemini && totalAttachments < MAX_VIDEOS && (
-            <button
-              type="button"
-              className="llm-video-link-add"
-              onClick={openLinkModal}
-            >
-              <Plus size={14} />
-              <span>再添加一个 YouTube 链接</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      <LlmPromptInput
-        variant={variant}
-        edges={edges}
-        nodeId={node.id}
-        value={params.prompt}
-        onChange={(text) => onParamsChange({ prompt: text })}
-        placeholder="描述你想从视频里理解什么..."
-      />
+      </div>
 
       <DockedBottomBar
         capability={capability}

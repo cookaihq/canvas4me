@@ -132,6 +132,9 @@ export default function CanvasContextMenu({ position, target, onClose, onAction 
           重置节点
         </div>
       )}
+      {target.nodeType === 'group' && (
+        <div className="ctx-menu-item" onClick={() => handleAction('ungroup', { nodeId: target.nodeId })}>解组</div>
+      )}
       <div
         className="ctx-menu-item ctx-menu-item-danger"
         onClick={() => handleAction('delete')}
@@ -143,6 +146,7 @@ export default function CanvasContextMenu({ position, target, onClose, onAction 
 
   const renderMultiSelectMenu = () => (
     <>
+      <div className="ctx-menu-item" onClick={() => handleAction('createGroup')}>成组</div>
       <div
         className="ctx-menu-item"
         onClick={() => handleAction('copy')}

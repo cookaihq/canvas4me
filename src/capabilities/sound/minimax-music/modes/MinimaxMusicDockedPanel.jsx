@@ -104,53 +104,56 @@ export default function MinimaxMusicDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {/* 音乐描述 */}
-      <div className={`mm-prompt-wrap${isModal ? ' modal' : ''}`}>
-        <TextInputWithEdges
-          value={params.prompt || ''}
-          onChange={(v) => onParamsChange({ prompt: v })}
-          nodes={nodes}
-          onChipDelete={handlePromptChipDelete}
-          variant={isModal ? 'modal' : 'inline'}
-          placeholder="描述你想要的音乐: 风格 / 情绪 / 乐器 / BPM…"
-        />
-      </div>
-
-      {/* 人声 */}
-      <SegmentControl
-        label="人声"
-        options={vocalOptions}
-        value={vocalMode}
-        onChange={(v) => onParamsChange({ vocalMode: v })}
-        fill
-      />
-
-      {/* 歌词 — 仅「自己写词」展开 */}
-      {vocalMode === 'lyrics' && (
-        <div className="mm-lyrics-wrap">
-          <div className="mm-tag-row" aria-label="结构标签快捷插入">
-            {STRUCTURE_TAGS.map(tag => (
-              <button
-                key={tag}
-                type="button"
-                className="mm-tag-chip"
-                onClick={() => lyricsRef.current?.insertText(tag)}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+      {/* 中间区：音乐描述 + 人声 + 歌词 一起内部滚动（过长时只滚这里，顶/底栏固定） */}
+      <div className="docked-panel-scroll">
+        {/* 音乐描述 */}
+        <div className={`mm-prompt-wrap${isModal ? ' modal' : ''}`}>
           <TextInputWithEdges
-            ref={lyricsRef}
-            value={params.lyrics || ''}
-            onChange={(v) => onParamsChange({ lyrics: v })}
+            value={params.prompt || ''}
+            onChange={(v) => onParamsChange({ prompt: v })}
             nodes={nodes}
-            onChipDelete={handleLyricsChipDelete}
-            variant="inline"
-            placeholder="歌词（选填）；点上方标签插入结构…"
+            onChipDelete={handlePromptChipDelete}
+            variant={isModal ? 'modal' : 'inline'}
+            placeholder="描述你想要的音乐: 风格 / 情绪 / 乐器 / BPM…"
           />
         </div>
-      )}
+
+        {/* 人声 */}
+        <SegmentControl
+          label="人声"
+          options={vocalOptions}
+          value={vocalMode}
+          onChange={(v) => onParamsChange({ vocalMode: v })}
+          fill
+        />
+
+        {/* 歌词 — 仅「自己写词」展开 */}
+        {vocalMode === 'lyrics' && (
+          <div className="mm-lyrics-wrap">
+            <div className="mm-tag-row" aria-label="结构标签快捷插入">
+              {STRUCTURE_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="mm-tag-chip"
+                  onClick={() => lyricsRef.current?.insertText(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <TextInputWithEdges
+              ref={lyricsRef}
+              value={params.lyrics || ''}
+              onChange={(v) => onParamsChange({ lyrics: v })}
+              nodes={nodes}
+              onChipDelete={handleLyricsChipDelete}
+              variant="inline"
+              placeholder="歌词（选填）；点上方标签插入结构…"
+            />
+          </div>
+        )}
+      </div>
 
       {/* 底栏: 模型 chip + 高级齿轮 + 积分 + Run + ×N */}
       <DockedBottomBar

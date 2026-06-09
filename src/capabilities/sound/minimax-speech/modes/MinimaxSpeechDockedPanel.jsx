@@ -125,23 +125,26 @@ export default function MinimaxSpeechDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {/* Prompt (带 ↗ 放大 icon, 字符计数, 支持文本端口连入 chip) */}
-      <PromptTextarea
-        value={params.prompt || ''}
-        onChange={(v) => onParamsChange?.({ prompt: v })}
-        nodes={nodes}
-        onChipDelete={handlePromptChipDelete}
-        variant={variant}
-        onRequestVariant={onRequestVariant}
-      />
-
-      {/* batch mode: prompt 下方的分隔符 radio */}
-      {isBatchMode && (
-        <SeparatorRadioGroup
-          value={params.separator || DEFAULT_SEPARATOR}
-          onChange={(v) => onParamsChange?.({ separator: v })}
+      {/* 中间区：Prompt + 分隔符 一起内部滚动（文本过长时只滚这里，顶/底栏固定） */}
+      <div className="docked-panel-scroll">
+        {/* Prompt (带 ↗ 放大 icon, 字符计数, 支持文本端口连入 chip) */}
+        <PromptTextarea
+          value={params.prompt || ''}
+          onChange={(v) => onParamsChange?.({ prompt: v })}
+          nodes={nodes}
+          onChipDelete={handlePromptChipDelete}
+          variant={variant}
+          onRequestVariant={onRequestVariant}
         />
-      )}
+
+        {/* batch mode: prompt 下方的分隔符 radio */}
+        {isBatchMode && (
+          <SeparatorRadioGroup
+            value={params.separator || DEFAULT_SEPARATOR}
+            onChange={(v) => onParamsChange?.({ separator: v })}
+          />
+        )}
+      </div>
 
       {/* 底栏紧贴 prompt: 自定义 ParamsPill + credits + advanced gear + Run + ×N
           advanced 区放在底栏之下, 让常用操作位置稳定不被高级区挤掉 */}

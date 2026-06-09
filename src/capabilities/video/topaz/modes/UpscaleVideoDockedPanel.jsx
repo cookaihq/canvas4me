@@ -160,6 +160,7 @@ export default function UpscaleVideoDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
+      <div className="docked-panel-scroll">
       <div className="topaz-dp-input-row">
         <span className="topaz-dp-input-label">
           <Film size={14} />
@@ -260,6 +261,7 @@ export default function UpscaleVideoDockedPanel({
             })}
           </div>
         </section>
+      </div>
       </div>
 
       <DockedBottomBar

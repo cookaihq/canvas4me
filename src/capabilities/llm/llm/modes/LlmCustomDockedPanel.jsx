@@ -129,11 +129,13 @@ export default function LlmCustomDockedPanel({
       <DockedTopBar capability={capability} mode={mode} variant={variant}
         onCapabilityChange={onCapabilityChange} onModeChange={onModeChange} onRequestVariant={onRequestVariant} />
 
-      <MixedAttachmentRow groups={groups} getInvalidReason={getInvalidReason} onPickFiles={handlePickFiles} onDelete={handleDelete} onPasteLink={handlePasteLink} />
+      <div className="docked-panel-scroll">
+        <MixedAttachmentRow groups={groups} getInvalidReason={getInvalidReason} onPickFiles={handlePickFiles} onDelete={handleDelete} onPasteLink={handlePasteLink} />
 
-      <LlmPromptInput variant={variant} edges={edges} nodeId={node.id}
-        value={params.prompt} onChange={(text) => onParamsChange({ prompt: text })}
-        placeholder="输入你想问的内容，可引用上方任意素材..." />
+        <LlmPromptInput variant={variant} edges={edges} nodeId={node.id}
+          value={params.prompt} onChange={(text) => onParamsChange({ prompt: text })}
+          placeholder="输入你想问的内容，可引用上方任意素材..." />
+      </div>
 
       <DockedBottomBar capability={capability} mode={mode} commonParams={commonParams} params={params}
         onParamsChange={onParamsChange} extraOptions={extraOptions} variant={variant} isDone={isDone}

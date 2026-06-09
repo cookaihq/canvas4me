@@ -41,6 +41,7 @@ import {
   LogOut, Key, Users, UserPlus, UserRound, LayoutGrid, WandSparkles, Clapperboard,
   Shuffle, Settings2, Minus, RectangleHorizontal, ArrowLeftRight,
   Expand, Video, AtSign, RefreshCw, RotateCcw, ArrowUpDown, ExternalLink,
+  Group, Ungroup,
 
   // UI Standards section header 装饰图标 (M1/M2: components-canvas + components-base)
   BadgeInfo, Layers, PanelBottom, LayoutPanelLeft, CircleDot, Activity,
@@ -102,6 +103,7 @@ export {
   LogOut, Key, Users, UserPlus, UserRound, LayoutGrid, WandSparkles, Clapperboard,
   Shuffle, Settings2, Minus, RectangleHorizontal, ArrowLeftRight,
   Expand, Video, AtSign, RefreshCw, RotateCcw, ArrowUpDown, ExternalLink,
+  Group, Ungroup,
   // UI Standards section header 装饰图标
   BadgeInfo, Layers, PanelBottom, LayoutPanelLeft, CircleDot, Activity,
   SquareMousePointer, TextCursorInput, Square, AppWindow, Tag,

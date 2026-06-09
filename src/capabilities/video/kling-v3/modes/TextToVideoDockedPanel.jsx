@@ -74,7 +74,7 @@ export default function TextToVideoDockedPanel({
       />
 
       <div className="docked-panel-scroll">
-        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="docked-scroll-fill" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <TextInputWithEdges
             value={params?.prompt || ''}
             onChange={(val) => onParamsChange?.({ prompt: val })}

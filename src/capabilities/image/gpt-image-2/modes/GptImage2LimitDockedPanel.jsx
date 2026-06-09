@@ -99,23 +99,26 @@ export default function GptImage2LimitDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {/* 参考图行 */}
-      <DockedReferenceRow
-        items={referenceItems}
-        max={10}
-        showAddButton={false}
-        onDelete={handleDeleteReference}
-      />
+      {/* 中间区：参考图行 + prompt 一起内部滚动（提示词过长时只滚这里，顶/底栏固定） */}
+      <div className="docked-panel-scroll">
+        {/* 参考图行 */}
+        <DockedReferenceRow
+          items={referenceItems}
+          max={10}
+          showAddButton={false}
+          onDelete={handleDeleteReference}
+        />
 
-      {/* prompt — 支持文本端口连入 chip + 手输混排 */}
-      <TextInputWithEdges
-        value={params.prompt || ''}
-        onChange={(val) => onParamsChange({ prompt: val })}
-        nodes={nodes}
-        onChipDelete={handlePromptChipDelete}
-        placeholder="描述想要生成的图像..."
-        variant={isModal ? 'modal' : 'inline'}
-      />
+        {/* prompt — 支持文本端口连入 chip + 手输混排 */}
+        <TextInputWithEdges
+          value={params.prompt || ''}
+          onChange={(val) => onParamsChange({ prompt: val })}
+          nodes={nodes}
+          onChipDelete={handlePromptChipDelete}
+          placeholder="描述想要生成的图像..."
+          variant={isModal ? 'modal' : 'inline'}
+        />
+      </div>
 
       {/* 底栏 */}
       <DockedBottomBar

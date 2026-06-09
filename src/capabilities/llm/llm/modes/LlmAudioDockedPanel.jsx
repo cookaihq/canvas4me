@@ -99,23 +99,25 @@ export default function LlmAudioDockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      <LlmAttachmentRow
-        kind="audio"
-        items={audioItems}
-        max={MAX_AUDIO}
-        multiple={false}
-        onPickFiles={handlePickFiles}
-        onDelete={handleDelete}
-      />
+      <div className="docked-panel-scroll">
+        <LlmAttachmentRow
+          kind="audio"
+          items={audioItems}
+          max={MAX_AUDIO}
+          multiple={false}
+          onPickFiles={handlePickFiles}
+          onDelete={handleDelete}
+        />
 
-      <LlmPromptInput
-        variant={variant}
-        edges={edges}
-        nodeId={node.id}
-        value={params.prompt}
-        onChange={(text) => onParamsChange({ prompt: text })}
-        placeholder="描述你想从音频里理解什么（可选）..."
-      />
+        <LlmPromptInput
+          variant={variant}
+          edges={edges}
+          nodeId={node.id}
+          value={params.prompt}
+          onChange={(text) => onParamsChange({ prompt: text })}
+          placeholder="描述你想从音频里理解什么（可选）..."
+        />
+      </div>
 
       <DockedBottomBar
         capability={capability}

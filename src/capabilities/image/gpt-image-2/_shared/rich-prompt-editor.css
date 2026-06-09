@@ -2,6 +2,11 @@
 
 .gi2-prompt-section {
   padding: 0;
+  /* 填满 prompt 包装, 标题固定 / 输入框自身滚动 */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .gi2-prompt-header {
@@ -42,6 +47,9 @@
 .gi2-prompt-box {
   position: relative;
   min-height: 88px;
+  /* 填满 section, 内容超出时输入框内部滚动(滚动条在框内) */
+  flex: 1 1 auto;
+  overflow-y: auto;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);

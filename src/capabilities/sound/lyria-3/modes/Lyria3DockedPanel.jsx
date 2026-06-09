@@ -172,53 +172,56 @@ export default function Lyria3DockedPanel({
         onRequestVariant={onRequestVariant}
       />
 
-      {/* 情绪板参考图 — 常驻，在音乐描述上方 */}
-      <MoodboardRow
-        items={moodboardItems}
-        max={MAX_MOODBOARD_IMAGES}
-        showAddButton
-        label="情绪板参考图"
-        onPickFiles={handlePickFiles}
-        onDelete={handleDeleteMoodboard}
-      />
-
-      {/* 结构标签快捷插入 — 紧凑态与放大态都显示，点击插到光标处 */}
-      <div className="lyria3-tag-row" aria-label="结构标签快捷插入">
-        {STRUCTURE_TAGS.map(tag => (
-          <button
-            key={tag}
-            type="button"
-            className="lyria3-tag-chip"
-            onClick={() => promptRef.current?.insertText(tag)}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
-
-      {/* 音乐描述 */}
-      <div className={`lyria3-prompt-wrap${isModal ? ' modal' : ''}`}>
-        <TextInputWithEdges
-          ref={promptRef}
-          value={params.prompt || ''}
-          onChange={(v) => onParamsChange({ prompt: v })}
-          nodes={nodes}
-          onChipDelete={handlePromptChipDelete}
-          variant={isModal ? 'modal' : 'inline'}
-          placeholder="描述你想要的音乐: 风格 / 情绪 / 乐器 / BPM…"
+      {/* 中间区：情绪板 + 结构标签 + 音乐描述 + 反向提示词 一起内部滚动（顶/底栏固定） */}
+      <div className="docked-panel-scroll">
+        {/* 情绪板参考图 — 常驻，在音乐描述上方 */}
+        <MoodboardRow
+          items={moodboardItems}
+          max={MAX_MOODBOARD_IMAGES}
+          showAddButton
+          label="情绪板参考图"
+          onPickFiles={handlePickFiles}
+          onDelete={handleDeleteMoodboard}
         />
-      </div>
 
-      {/* 高级区: 反向提示词（齿轮展开 advanced，或放大 modal 时显示） */}
-      {showAdvanced && (
-        <PromptTextarea
-          label="反向提示词"
-          value={params.negative_prompt || ''}
-          onChange={(v) => onParamsChange({ negative_prompt: v })}
-          placeholder="描述不希望出现的元素：harsh, distorted, low quality…"
-          maxLength={500}
-        />
-      )}
+        {/* 结构标签快捷插入 — 紧凑态与放大态都显示，点击插到光标处 */}
+        <div className="lyria3-tag-row" aria-label="结构标签快捷插入">
+          {STRUCTURE_TAGS.map(tag => (
+            <button
+              key={tag}
+              type="button"
+              className="lyria3-tag-chip"
+              onClick={() => promptRef.current?.insertText(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
+        {/* 音乐描述 */}
+        <div className={`lyria3-prompt-wrap${isModal ? ' modal' : ''}`}>
+          <TextInputWithEdges
+            ref={promptRef}
+            value={params.prompt || ''}
+            onChange={(v) => onParamsChange({ prompt: v })}
+            nodes={nodes}
+            onChipDelete={handlePromptChipDelete}
+            variant={isModal ? 'modal' : 'inline'}
+            placeholder="描述你想要的音乐: 风格 / 情绪 / 乐器 / BPM…"
+          />
+        </div>
+
+        {/* 高级区: 反向提示词（齿轮展开 advanced，或放大 modal 时显示） */}
+        {showAdvanced && (
+          <PromptTextarea
+            label="反向提示词"
+            value={params.negative_prompt || ''}
+            onChange={(v) => onParamsChange({ negative_prompt: v })}
+            placeholder="描述不希望出现的元素：harsh, distorted, low quality…"
+            maxLength={500}
+          />
+        )}
+      </div>
 
       {/* 底栏: 模型 chip + 积分 + Run + ×N */}
       <DockedBottomBar
