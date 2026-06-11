@@ -56,6 +56,7 @@ import useCanvasPanMode from './hooks/useCanvasPanMode'
 import useBoxSelectEdges from './hooks/useBoxSelectEdges'
 import useGroupActions from './hooks/useGroupActions'
 import useBatchDownload from './hooks/useBatchDownload'
+import useAgentExecutor from './agent/useAgentExecutor'
 
 // ─── 状态写访问层 ───
 import { useCanvasFacade } from './state/canvasFacade'
@@ -263,6 +264,25 @@ function AiCanvasInner({
   // ── 画布状态写访问层 —— 所有节点/边的写经此命令式 API ──
   const facade = useCanvasFacade()
 
+  // 外部命令执行器透传 ref:切换画布 / 取项目元信息 / 编辑态这几个值都定义在本调用点之后,
+  // 用 ref 让执行器在命令到达时再读 .current 拿最新值(避免声明顺序问题)。
+  // 各 .current 在下方对应值就绪后用 useEffect 写入。
+  const switchCanvasRef = useRef(null)
+  const projectMetaRef = useRef(null)
+  const editingRef = useRef(true)
+  // 运行 / 视口 / 分组 / 连线也经 ref 透传(同样定义在本调用点之后),命令到达时再读 .current。
+  const runNodeRef = useRef(null)
+  const viewportRef = useRef(null)
+  const groupActionsRef = useRef(null)
+  const connectRef = useRef(null)
+  const isValidConnectionRef = useRef(null)
+
+  // 外部命令中转执行器:始终调用,内部按设置开关(缺省关)决定是否建连接落地命令。
+  useAgentExecutor(facade, {
+    switchCanvasRef, projectMetaRef, editingRef,
+    runNodeRef, viewportRef, groupActionsRef, connectRef, isValidConnectionRef,
+  })
+
   // 输出节点自动堆叠重排：失败节点被错误信息撑高 / loading→结果切换时,
   // 把"自己之下"的兄弟节点同步下移,避免重叠。仅对 autoPositioned 节点生效。
   useAutoStackReflow()
@@ -377,6 +397,9 @@ function AiCanvasInner({
   const isLoadingCanvasRef = useRef(false)
   useEffect(() => { markDirtyRef.current = markDirty }, [markDirty])
   useEffect(() => { triggerSaveRef.current = triggerSave }, [triggerSave])
+  // 外部命令执行器读这两个:编辑态 + 当前项目元信息(switchCanvasRef 在 handleSwitchCanvas 定义后单独写)。
+  useEffect(() => { editingRef.current = isEditing }, [isEditing])
+  useEffect(() => { projectMetaRef.current = () => ({ id: canvasId, name: canvasName }) }, [canvasId, canvasName])
 
   // 同步最新画布状态到 ref —— 直接在 render body 里写, 不走 useEffect.
   // 错误捕获 provider 只读 ref.current, 不需要 React 调度. 走 useEffect 反而每次
@@ -1085,6 +1108,11 @@ function AiCanvasInner({
     onUngroup: () => ungroup(),
   })
 
+  // 外部命令执行器透传:运行(取号式,resolve 于上游提交完成)+ 成组/解组。
+  // 用底层 run(不是 handleRun)——它不弹只读 toast,运行许可由工具侧 isEditing 检查把关。
+  useEffect(() => { runNodeRef.current = run }, [run])
+  useEffect(() => { groupActionsRef.current = { createGroup, ungroup } }, [createGroup, ungroup])
+
   // ━━━ 画布加载 ━━━
 
   /**
@@ -1318,6 +1346,13 @@ function AiCanvasInner({
     nodes, edges, onNodesChange, onEdgesChange,
   })
 
+  // 外部命令执行器透传:连线走画布标准 onConnect(写边 + portConnections + 折叠源代理),
+  // 让命令创建的连线与手动拉线行为完全一致;校验用同一个 isValidConnection。
+  useEffect(() => {
+    connectRef.current = onConnect
+    isValidConnectionRef.current = isValidConnection
+  }, [onConnect, isValidConnection])
+
   // ━━━ P5 拖拽保存 ━━━
 
   // 拖动过程中实时高亮"松手会落入"的目标组(单个非 group 节点拖动才激活)
@@ -1489,6 +1524,9 @@ function AiCanvasInner({
     panToNodesBoundsRef.current = panToNodesBounds
   }, [panCanvasTo, panToNodesBounds])
 
+  // 外部命令执行器读 viewport(add_node 自动布局 / focus_node 平移用):整组同步到 ref。
+  useEffect(() => { viewportRef.current = viewport }, [viewport])
+
   const {
     contextMenu,
     onPaneContextMenu,
@@ -1652,6 +1690,9 @@ function AiCanvasInner({
       })
     }
   }, [canvasId, isEditing, onBeforeSwitchCanvas, onCanvasSwitched, facade, setViewport, resumePendingOutputs])
+
+  // 外部命令执行器的 open_project / create_project 经此 ref 调到画布切换。
+  useEffect(() => { switchCanvasRef.current = handleSwitchCanvas }, [handleSwitchCanvas])
 
   const handleCreateCanvas = useCallback((canvas) => {
     setCanvasName(canvas.name || '')

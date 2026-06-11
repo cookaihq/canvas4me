@@ -30,9 +30,11 @@
     "streamdown": "^2.5.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^10.4.0",
     "eslint-plugin-react": "^7.37.5",
+    "playwright": "^1.60.0",
     "vite": "^6.0.5"
   }
 }

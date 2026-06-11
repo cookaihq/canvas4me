@@ -1,0 +1,28 @@
+{
+  "name": "canvas4me-mcp",
+  "version": "0.1.0",
+  "description": "canvas4me 的 MCP 中继桥：外部 MCP 客户端经最小桥操控浏览器里的画布（桥只转发，执行在页面）",
+  "type": "module",
+  "main": "src/node/index.mjs",
+  "bin": {
+    "canvas4me-mcp": "src/node/index.mjs"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node src/node/index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookaihq/canvas4me.git",
+    "directory": "bridge"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ws": "^8.21.0",
+    "zod": "^4.0.0"
+  }
+}

@@ -10,6 +10,7 @@
 - **AI 能力节点**：图像生成 / 视频生成 / 语音合成 / 音乐生成 / LLM 等开箱即用
 - **浏览器本地存储**：画布数据存 IndexedDB，无需账号，开关浏览器即恢复
 - **自带 API Key**：在 SimpleSettings 配 foxapi Bearer token 即可使用
+- **Agent 可操控（MCP）**：自带 MCP 中继桥 + Agent 技能，Claude Code / Codex 对话即可搭建和运行画布（见下文）
 
 ## 快速开始
 
@@ -114,6 +115,58 @@ location / {
 | LLM | `llm`（4 mode：text / vision / audio / video） |
 
 更多能力陆续接入中。
+
+## 用 agent 操控画布（MCP）
+
+本仓自带一套 MCP 集成：让你自己的 agent（Claude Code / Codex 等 MCP 客户端）通过对话操控你打开的画布——增删节点、连线、填参、触发运行、取回真实产物。
+
+**架构一句话**：你的 agent（自带大脑）→ MCP 协议 → [`bridge/`](bridge/)（只转发的中继桥）→ 画布 tab 里的执行器 → 画布。桥不碰画布数据，真正动手的永远是浏览器里的执行器。
+
+> 当前为**本地 stdio 模式**：MCP 客户端自动拉起桥，桥在 `localhost:7777` 等画布 tab 连。远程 / 公共托管 / 配对码 / 鉴权在路线图上。
+
+**① 把桥配进 MCP 客户端**
+
+```bash
+claude mcp add canvas4me -- npx canvas4me-mcp
+# npm 包发布前可用仓内路径等价替代：
+claude mcp add canvas4me -- node /path/to/canvas4me/bridge/src/node/index.mjs
+```
+
+画布 tab 没连上前 `listTools` 为空是正常的——工具由画布连上时动态声明，桥不写死任何工具。
+
+**② 装技能**（教 agent 画布工具的标准用法）
+
+```bash
+npx skills add cookaihq/canvas4me
+```
+
+**③ 启用画布的 agent 桥**（默认关闭，暂无 UI 开关）
+
+打开画布页 → DevTools 控制台（F12）粘贴运行：
+
+```js
+const k = 'ai-canvas:settings:global'
+const s = JSON.parse(localStorage.getItem(k) || '{}')
+s.agentBridge = { ...(s.agentBridge || {}), enabled: true }
+localStorage.setItem(k, JSON.stringify(s))
+location.reload()
+```
+
+刷新后画布连上 `ws://localhost:7777`，向桥声明全部 18 个工具（能力发现 / 项目 / 画布读 / 增删改连 / 分组 / 运行取结果 / 镜头）。关闭：同一个 key 把 `enabled` 改回 `false` 再刷新。
+
+**④ 对 agent 说目的**
+
+保持**画布 tab 开着**（桥只认第一个连上的 tab），在 Claude Code 里直接说，例如：
+
+> 「写个小故事放进文本节点；连到大模型节点变成分镜脚本；按分镜用 gpt-image-2 出图；再把图给 seedance-2 出视频。」
+
+agent 会自己拆成工具调用，你在画布上看着它一步步搭建、运行、出真实产物。
+
+**注意**：本地桥不校验 Origin、不要 token——同浏览器里任意页面都可能抢先连 7777 当「tab」。信任敏感场景关掉其它 tab；详见 [`bridge/README.md`](bridge/README.md) 的 Security 段。真实生成消耗 foxapi 额度。
+
+## 贡献
+
+本仓是主开发仓的**开源镜像**（单向同步）：直接对本仓提的 PR 无法原样合入——下次同步会覆盖。欢迎照常开 PR / issue：有价值的改动由维护者人工搬回主仓、随下次同步发布并在 PR 中致谢；issue 与讨论不受镜像机制影响。
 
 ## FAQ
 

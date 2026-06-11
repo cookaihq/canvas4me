@@ -48,3 +48,6 @@ package-lock.json
 /task*.txt
 /verify-*.png
 /.test-screenshots/
+
+# Agent 技能本地配置(从 config.example.json 复制创建)
+skills/ai-canvas-control/config.json

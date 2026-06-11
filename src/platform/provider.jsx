@@ -44,6 +44,9 @@ export const useSettings = () => usePlatform().settings
 /** @returns {import('./interfaces/VoicePresets').VoicePresets} */
 export const useVoicePresets = () => usePlatform().voicePresets
 
+/** @returns {import('./interfaces/AgentBridge').AgentBridge | undefined} */
+export const useAgentBridge = () => usePlatform().agentBridge
+
 /**
  * 平台构建模式 —— 由各入口 platformImpl 注入的运行时枚举值。
  * capability 用它判断当前模式下是否渲染禁用占位(如 midjourney / image-upscale 在
